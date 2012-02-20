@@ -1,0 +1,676 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Denoising Autoencoders (dA) &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Stacked Denoising Autoencoders (SdA)" href="SdA.html" />
+    <link rel="prev" title="Convolutional Neural Networks (LeNet)" href="lenet.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="SdA.html" title="Stacked Denoising Autoencoders (SdA)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="lenet.html" title="Convolutional Neural Networks (LeNet)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Denoising Autoencoders (dA)</a><ul>
+<li><a class="reference external" href="#autoencoders">Autoencoders</a></li>
+<li><a class="reference external" href="#denoising-autoencoders">Denoising Autoencoders</a></li>
+<li><a class="reference external" href="#putting-it-all-together">Putting it All Together</a></li>
+<li><a class="reference external" href="#running-the-code">Running the Code</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="lenet.html"
+                                  title="previous chapter">Convolutional Neural Networks (LeNet)</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="SdA.html"
+                                  title="next chapter">Stacked Denoising Autoencoders (SdA)</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/dA.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="denoising-autoencoders-da">
+<span id="daa"></span><h1>Denoising Autoencoders (dA)<a class="headerlink" href="#denoising-autoencoders-da" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This section assumes the reader has already read through <a class="reference external" href="logreg.html"><em>Classifying MNIST digits using Logistic Regression</em></a>
+and <a class="reference external" href="mlp.html"><em>Multilayer Perceptron</em></a>. Additionally it uses the following Theano functions
+and concepts : <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html?highlight=tanh">T.tanh</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-shared-variables">shared variables</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/adding.html#adding-two-scalars">basic arithmetic ops</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#computing-gradients">T.grad</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-random-numbers">Random numbers</a>, <a class="reference external" href="http://deeplearning.net/software/theano/library/config.html#config.floatX">floatX</a>. If you intend to run the code on GPU also read <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/using_gpu.html">GPU</a>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/dA.py">here</a>.</p>
+</div>
+<p>The Denoising Autoencoder (dA) is an extension of a classical
+autoencoder and it was introduced as a building block for deep networks
+in <a class="reference external" href="references.html#vincent08">[Vincent08]</a>. We will start the tutorial with a short discussion on
+<a class="reference internal" href="#autoencoders"><em>Autoencoders</em></a>.</p>
+<div class="section" id="autoencoders">
+<span id="id2"></span><h2>Autoencoders<a class="headerlink" href="#autoencoders" title="Permalink to this headline">¶</a></h2>
+<p>See section 4.6 of <a class="reference external" href="references.html#bengio09">[Bengio09]</a> for an overview of auto-encoders.
+An autoencoder takes an input <img class="math" src="_images/math/2caf1f89ed75f3e7e1a54da2de6d2a120e681ffe.png" alt="\mathbf{x} \in [0,1]^d"/> and first
+maps it (with an <em>encoder</em>) to a hidden representation <img class="math" src="_images/math/6e653e014c4d2bd15907a95670d3534982825bdc.png" alt="\mathbf{y} \in [0,1]^{d'}"/>
+through a deterministic mapping, e.g.:</p>
+<div class="math">
+<p><img src="_images/math/8b871b12a39501d1342bffa4b67cbc22a03f339f.png" alt="\mathbf{y} = s(\mathbf{W}\mathbf{x} + \mathbf{b})" /></p>
+</div><p>Where <img class="math" src="_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s"/> is a non-linearity such as the sigmoid.
+The latent representation <img class="math" src="_images/math/6c382eeb0dad017400c2bb6e32c2d5bdf4002c3e.png" alt="\mathbf{y}"/>, or <strong>code</strong> is then mapped back (with a <em>decoder</em>) into a
+<strong>reconstruction</strong> <img class="math" src="_images/math/fdfd9b84e32a56f39b510b1cec00a0363b46cacd.png" alt="\mathbf{z}"/> of same shape as
+<img class="math" src="_images/math/5f61118f2ae912f86e683687c005145b5eb54aec.png" alt="\mathbf{x}"/> through a similar transformation, e.g.:</p>
+<div class="math">
+<p><img src="_images/math/853e2b5a9d872d5b814574689ffe3315562fef9f.png" alt="\mathbf{z} = s(\mathbf{W'}\mathbf{y} + \mathbf{b'})" /></p>
+</div><p>where &#8216; does not indicate transpose, and
+<img class="math" src="_images/math/fdfd9b84e32a56f39b510b1cec00a0363b46cacd.png" alt="\mathbf{z}"/> should be seen as a prediction of <img class="math" src="_images/math/5f61118f2ae912f86e683687c005145b5eb54aec.png" alt="\mathbf{x}"/>, given the code <img class="math" src="_images/math/6c382eeb0dad017400c2bb6e32c2d5bdf4002c3e.png" alt="\mathbf{y}"/>.
+The weight matrix <img class="math" src="_images/math/1c2792ae0bdf658f6e6fad971797e5dcf6be9698.png" alt="\mathbf{W'}"/> of the reverse mapping may be
+optionally constrained by <img class="math" src="_images/math/44958ebdeecc35ce05e256636902fb9bb8046cf4.png" alt="\mathbf{W'} = \mathbf{W}^T"/>, which is
+an instance of <em>tied weights</em>. The parameters of this model (namely
+<img class="math" src="_images/math/3d297b08b2be3554447c92b5982773d47c0de100.png" alt="\mathbf{W}"/>, <img class="math" src="_images/math/fccad4b3914168405510f7854bb8f10d4115f56f.png" alt="\mathbf{b}"/>,
+<img class="math" src="_images/math/009f135a59b509a1a4eadc3e2762277fa112316b.png" alt="\mathbf{b'}"/> and, if one doesn&#8217;t use tied weights, also
+<img class="math" src="_images/math/1c2792ae0bdf658f6e6fad971797e5dcf6be9698.png" alt="\mathbf{W'}"/>) are optimized such that the average reconstruction
+error is minimized. The reconstruction error can be measured in many ways, depending
+on the appropriate distributional assumptions on the input given the code, e.g., using the
+traditional <em>squared error</em> <img class="math" src="_images/math/58f791b90fc6deef412bf6c97aefa096cafcfca8.png" alt="L(\mathbf{x}, \mathbf{z}) = || \mathbf{x} - \mathbf{z} ||^2"/>,
+or if the input is interpreted as either bit vectors or vectors of
+bit probabilities by the reconstruction <em>cross-entropy</em> defined as :</p>
+<div class="math">
+<p><img src="_images/math/6eb799367d2c81dedab651aa477e0ecfbfeedd00.png" alt="L_{H} (\mathbf{x}, \mathbf{z}) = - \sum^d_{k=1}[\mathbf{x}_k \log
+        \mathbf{z}_k + (1 - \mathbf{x}_k)\log(1 - \mathbf{z}_k)]" /></p>
+</div><p>The hope is that the code <img class="math" src="_images/math/6c382eeb0dad017400c2bb6e32c2d5bdf4002c3e.png" alt="\mathbf{y}"/> is a distributed representation
+that captures the coordinates along the main factors of variation in the data
+(similarly to how the projection on principal components captures the main factors
+of variation in the data).
+Because <img class="math" src="_images/math/6c382eeb0dad017400c2bb6e32c2d5bdf4002c3e.png" alt="\mathbf{y}"/> is viewed as a lossy compression of <img class="math" src="_images/math/5f61118f2ae912f86e683687c005145b5eb54aec.png" alt="\mathbf{x}"/>, it cannot
+be a good compression (with small loss) for all <img class="math" src="_images/math/5f61118f2ae912f86e683687c005145b5eb54aec.png" alt="\mathbf{x}"/>, so learning
+drives it to be one that is a good compression in particular for training
+examples, and hopefully for others as well, but not for arbitrary inputs.
+That is the sense in which an auto-encoder generalizes: it gives low reconstruction
+error to test examples from the same distribution as the training examples,
+but generally high reconstruction error to uniformly chosen configurations of the
+input vector.</p>
+<p>If there is one linear hidden layer (the code) and
+the mean squared error criterion is used to train the network, then the <img class="math" src="_images/math/8c325612684d41304b9751c175df7bcc0f61f64f.png" alt="k"/>
+hidden units learn to project the input in the span of the first <img class="math" src="_images/math/8c325612684d41304b9751c175df7bcc0f61f64f.png" alt="k"/>
+principal components of the data. If the hidden
+layer is non-linear, the auto-encoder behaves differently from PCA,
+with the ability to capture multi-modal aspects of the input
+distribution. The departure from PCA becomes even more important when
+we consider <em>stacking multiple encoders</em> (and their corresponding decoders)
+when building a deep auto-encoder <a class="reference external" href="references.html#hinton06">[Hinton06]</a>.</p>
+<p>We want to implement an auto-encoder using Theano, in the form of a class,
+that could be afterwards used in constructing a stacked autoencoder. The
+first step is to create shared variables for the parameters of the
+autoencoder ( <img class="math" src="_images/math/3d297b08b2be3554447c92b5982773d47c0de100.png" alt="\mathbf{W}"/>, <img class="math" src="_images/math/fccad4b3914168405510f7854bb8f10d4115f56f.png" alt="\mathbf{b}"/> and
+<img class="math" src="_images/math/009f135a59b509a1a4eadc3e2762277fa112316b.png" alt="\mathbf{b'}"/>, since we are using tied weights in this tutorial ):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">AutoEncoder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numpy_rng</span><span class="p">,</span> <span class="nb">input</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">n_visible</span><span class="o">=</span> <span class="mi">784</span><span class="p">,</span> <span class="n">n_hidden</span><span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
+           <span class="n">W</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">bhid</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">bvis</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :type numpy_rng: numpy.random.RandomState</span>
+<span class="sd">    :param numpy_rng: number random generator used to generate weights</span>
+
+
+<span class="sd">    :type input: theano.tensor.TensorType</span>
+<span class="sd">    :paran input: a symbolic description of the input or None for standalone</span>
+<span class="sd">                  dA</span>
+
+<span class="sd">    :type n_visible: int</span>
+<span class="sd">    :param n_visible: number of visible units</span>
+
+<span class="sd">    :type n_hidden: int</span>
+<span class="sd">    :param n_hidden:  number of hidden units</span>
+
+<span class="sd">    :type W: theano.tensor.TensorType</span>
+<span class="sd">    :param W: Theano variable pointing to a set of weights that should be</span>
+<span class="sd">              shared belong the dA and another architecture; if dA should</span>
+<span class="sd">              be standalone set this to None</span>
+
+<span class="sd">    :type bhid: theano.tensor.TensorType</span>
+<span class="sd">    :param bhid: Theano variable pointing to a set of biases values (for</span>
+<span class="sd">                 hidden units) that should be shared belong dA and another</span>
+<span class="sd">                 architecture; if dA should be standalone set this to None</span>
+
+<span class="sd">    :type bvis: theano.tensor.TensorType</span>
+<span class="sd">    :param bvis: Theano variable pointing to a set of biases values (for</span>
+<span class="sd">                 visible units) that should be shared belong dA and another</span>
+<span class="sd">                 architecture; if dA should be standalone set this to None</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n_visible</span> <span class="o">=</span> <span class="n">n_visible</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n_hidden</span>  <span class="o">=</span> <span class="n">n_hidden</span>
+
+
+    <span class="c"># note : W&#39; was written as `W_prime` and b&#39; as `b_prime`</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">W</span><span class="p">:</span>
+        <span class="c"># W is initialized with `initial_W` which is uniformely sampled</span>
+        <span class="c"># from -4*sqrt(6./(n_visible+n_hidden)) and 4*sqrt(6./(n_hidden+n_visible))</span>
+        <span class="c"># the output of uniform if converted using asarray to dtype</span>
+        <span class="c"># theano.config.floatX so that the code is runable on GPU</span>
+        <span class="n">initial_W</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">numpy_rng</span><span class="p">(</span>
+                  <span class="n">low</span>  <span class="o">=</span> <span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_hidden</span><span class="o">+</span><span class="n">n_visible</span><span class="p">)),</span>
+                  <span class="n">high</span> <span class="o">=</span>  <span class="mi">4</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_hidden</span><span class="o">+</span><span class="n">n_visible</span><span class="p">)),</span>
+                  <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_visible</span><span class="p">,</span> <span class="n">n_hidden</span><span class="p">)),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+        <span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">initial_W</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;W&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bvis</span><span class="p">:</span>
+        <span class="n">bvis</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_visible</span><span class="p">,</span>
+                                     <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;bvis&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bhid</span><span class="p">:</span>
+        <span class="n">bhid</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_hidden</span><span class="p">,</span>
+                                          <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;bhid&#39;</span><span class="p">)</span>
+
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">W</span>
+    <span class="c"># b corresponds to the bias of the hidden</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">bhid</span>
+    <span class="c"># b_prime corresponds to the bias of the visible</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">b_prime</span> <span class="o">=</span> <span class="n">bvis</span>
+    <span class="c"># tied weights, therefore W_prime is W transpose</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">W_prime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span>
+    <span class="c"># if no input is given, generate a variable representing the input</span>
+    <span class="k">if</span> <span class="nb">input</span> <span class="o">==</span> <span class="bp">None</span> <span class="p">:</span>
+        <span class="c"># we use a matrix because we expect a minibatch of several examples,</span>
+        <span class="c"># each example being a row</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">dmatrix</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;input&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="nb">input</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_prime</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Note that we pass the symbolic <tt class="docutils literal"><span class="pre">input</span></tt>  to the autoencoder as a
+parameter. This is such that later we can concatenate layers of
+autoencoders to form a deep network: the symbolic output (the <img class="math" src="_images/math/6c382eeb0dad017400c2bb6e32c2d5bdf4002c3e.png" alt="\mathbf{y}"/> above) of
+the k-th layer will be the symbolic input of the (k+1)-th.</p>
+<p>Now we can express the computation of the latent representation and of the reconstructed
+signal:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_hidden_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Computes the values of the hidden layer &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_reconstructed_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Computes the reconstructed input given the values of the hidden layer &quot;&quot;&quot;</span>
+    <span class="k">return</span>  <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W_prime</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_prime</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And using these function we can compute the cost and the updates of
+one stochastic gradient descent step :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_cost_updates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This function computes the cost and the updates for one trainng</span>
+<span class="sd">    step &quot;&quot;&quot;</span>
+
+    <span class="n">y</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_hidden_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">z</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reconstructed_input</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="c"># note : we sum over the size of a datapoint; if we are using minibatches,</span>
+    <span class="c">#        L will  be a vector, with one entry per example in minibatch</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="o">-</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span> <span class="p">)</span>
+    <span class="c"># note : L is now a vector, where each element is the cross-entropy cost</span>
+    <span class="c">#        of the reconstruction of the corresponding example of the</span>
+    <span class="c">#        minibatch. We need to compute the average of all these to get</span>
+    <span class="c">#        the cost of the minibatch</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+
+    <span class="c"># compute the gradients of the cost of the `dA` with respect</span>
+    <span class="c"># to its parameters</span>
+    <span class="n">gparams</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+    <span class="c"># generate the list of updates</span>
+    <span class="n">updates</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">gparam</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">gparams</span><span class="p">):</span>
+        <span class="n">updates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span> <span class="o">-</span>  <span class="n">learning_rate</span><span class="o">*</span><span class="n">gparam</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can now define a function that applied iteratively will update the
+parameters <tt class="docutils literal"><span class="pre">W</span></tt>, <tt class="docutils literal"><span class="pre">b</span></tt> and <tt class="docutils literal"><span class="pre">b_prime</span></tt> such that the
+reconstruction cost is approximately minimized.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">autoencoder</span> <span class="o">=</span> <span class="n">AutoEncoder</span><span class="p">(</span> <span class="n">numpy_rng</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">1234</span><span class="p">),</span> <span class="n">n_visible</span> <span class="o">=</span> <span class="mi">784</span><span class="p">,</span> <span class="n">n_hidden</span> <span class="o">=</span>  <span class="mi">500</span><span class="p">)</span>
+<span class="n">cost</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">autoencoder</span><span class="o">.</span><span class="n">get_cost_updates</span><span class="p">(</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">cost</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>One serious potential issue with auto-encoders is that if there is no other
+constraint besides minimizing the reconstruction error,
+then an auto-encoder with <img class="math" src="_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> inputs and an
+encoding of dimension at least <img class="math" src="_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> could potentially just learn
+the identity function, for which many encodings would be useless (e.g.,
+just copying the input), i.e., the autoencoder would not differentiate
+test examples (from the training distribution) from other input configurations.
+Surprisingly, experiments reported in <a class="reference external" href="references.html#bengio07">[Bengio07]</a> nonetheless
+suggest that in practice, when trained with
+stochastic gradient descent, non-linear auto-encoders with more hidden units
+than inputs (called overcomplete) yield useful representations
+(in the sense of classification error measured on a network taking this
+representation in input). A simple explanation is based on the
+observation that stochastic gradient
+descent with early stopping is similar to an L2 regularization of the
+parameters. To achieve perfect reconstruction of continuous
+inputs, a one-hidden layer auto-encoder with non-linear hidden units
+(exactly like in the above code)
+needs very small weights in the first (encoding) layer (to bring the non-linearity of
+the hidden units in their linear regime) and very large weights in the
+second (decoding) layer.
+With binary inputs, very large weights are
+also needed to completely minimize the reconstruction error. Since the
+implicit or explicit regularization makes it difficult to reach
+large-weight solutions, the optimization algorithm finds encodings which
+only work well for examples similar to those in the training set, which is
+what we want. It means that the representation is exploiting statistical
+regularities present in the training set, rather than learning to
+replicate the identity function.</p>
+<p>There are different ways that an auto-encoder with more hidden units
+than inputs could be prevented from learning the identity, and still
+capture something useful about the input in its hidden representation.
+One is the addition of sparsity (forcing many of the hidden units to
+be zero or near-zero), and it has been exploited very successfully
+by many <a class="reference external" href="references.html#ranzato07">[Ranzato07]</a> <a class="reference external" href="references.html#lee08">[Lee08]</a>. Another is to add randomness in the transformation from
+input to reconstruction. This is exploited in Restricted Boltzmann
+Machines (discussed later in <a class="reference external" href="rbm.html#rbm"><em>Restricted Boltzmann Machines (RBM)</em></a>), as well as in
+Denoising Auto-Encoders, discussed below.</p>
+</div>
+<div class="section" id="denoising-autoencoders">
+<span id="da"></span><h2>Denoising Autoencoders<a class="headerlink" href="#denoising-autoencoders" title="Permalink to this headline">¶</a></h2>
+<p>The idea behind denoising autoencoders is simple. In order to force
+the hidden layer to discover more robust features and prevent it
+from simply learning the identity, we train the
+autoencoder to <em>reconstruct the input from a corrupted version of it</em>.</p>
+<p>The denoising auto-encoder is a stochastic version of the auto-encoder.
+Intuitively, a denoising auto-encoder does two things: try to encode the
+input (preserve the information about the input), and try to undo the
+effect of a corruption process stochastically applied to the input of the
+auto-encoder. The latter can only be done by capturing the statistical
+dependencies between the inputs. The denoising
+auto-encoder can be understood from different perspectives
+( the manifold learning perspective,
+stochastic operator perspective,
+bottom-up &#8211; information theoretic perspective,
+top-down &#8211; generative model perspective ), all of which are explained in
+[Vincent08].
+See also section 7.2 of <a class="reference external" href="references.html#bengio09">[Bengio09]</a> for an overview of auto-encoders.</p>
+<p>In [Vincent08], the stochastic corruption process
+consists in randomly setting some of the inputs (as many as half of them)
+to zero. Hence the denoising auto-encoder is trying to <em>predict the corrupted (i.e. missing)
+values from the uncorrupted (i.e., non-missing) values</em>, for randomly selected subsets of
+missing patterns. Note how being able to predict any subset of variables
+from the rest is a sufficient condition for completely capturing the
+joint distribution between a set of variables (this is how Gibbs
+sampling works).</p>
+<p>To convert the autoencoder class into a denoising autoencoder class, all we
+need to do is to add a stochastic corruption step operating on the input. The input can be
+corrupted in many ways, but in this tutorial we will stick to the original
+corruption mechanism of randomly masking entries of the input by making
+them zero. The code below
+does just that :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">theano.tensor.shared_randomstreams</span> <span class="kn">import</span> <span class="n">RandomStreams</span>
+
+<span class="k">def</span> <span class="nf">get_corrupted_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">corruption_level</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot; This function keeps ``1-corruption_level`` entries of the inputs the same</span>
+<span class="sd">      and zero-out randomly selected subset of size ``coruption_level``</span>
+<span class="sd">      Note : first argument of theano.rng.binomial is the shape(size) of</span>
+<span class="sd">             random numbers that it should produce</span>
+<span class="sd">             second argument is the number of trials</span>
+<span class="sd">             third argument is the probability of success of any trial</span>
+
+<span class="sd">              this will produce an array of 0s and 1s where 1 has a probability of</span>
+<span class="sd">              1 - ``corruption_level`` and 0 with ``corruption_level``</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+      <span class="k">return</span>  <span class="bp">self</span><span class="o">.</span><span class="n">theano_rng</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span> <span class="n">size</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span>  <span class="mi">1</span> <span class="o">-</span> <span class="n">corruption_level</span><span class="p">)</span> <span class="o">*</span> <span class="nb">input</span>
+</pre></div>
+</div>
+<p>In the stacked autoencoder class (<a class="reference external" href="SdA.html#stacked-autoencoders"><em>Stacked Autoencoders</em></a>) the
+weights of the <tt class="docutils literal"><span class="pre">dA</span></tt> class have to be shared with those of an
+corresponding sigmoid layer. For this reason, the constructor of the <tt class="docutils literal"><span class="pre">dA</span></tt> also gets Theano
+variables pointing to the shared parameters. If those parameters are left
+to <tt class="xref docutils literal"><span class="pre">None</span></tt>, new ones will be constructed.</p>
+<p>The final denoising autoencoder class becomes :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">dA</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+   <span class="sd">&quot;&quot;&quot;Denoising Auto-Encoder class (dA)</span>
+
+<span class="sd">   A denoising autoencoders tries to reconstruct the input from a corrupted</span>
+<span class="sd">   version of it by projecting it first in a latent space and reprojecting</span>
+<span class="sd">   it afterwards back in the input space. Please refer to Vincent et al.,2008</span>
+<span class="sd">   for more details. If x is the input then equation (1) computes a partially</span>
+<span class="sd">   destroyed version of x by means of a stochastic mapping q_D. Equation (2)</span>
+<span class="sd">   computes the projection of the input into the latent space. Equation (3)</span>
+<span class="sd">   computes the reconstruction of the input, while equation (4) computes the</span>
+<span class="sd">   reconstruction error.</span>
+
+<span class="sd">   .. math::</span>
+
+<span class="sd">       \tilde{x} ~ q_D(\tilde{x}|x)                                     (1)</span>
+
+<span class="sd">       y = s(W \tilde{x} + b)                                           (2)</span>
+
+<span class="sd">       x = s(W&#39; y  + b&#39;)                                                (3)</span>
+
+<span class="sd">       L(x,z) = -sum_{k=1}^d [x_k \log z_k + (1-x_k) \log( 1-z_k)]      (4)</span>
+
+<span class="sd">   &quot;&quot;&quot;</span>
+
+   <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numpy_rng</span><span class="p">,</span> <span class="n">theano_rng</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="nb">input</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">n_visible</span><span class="o">=</span> <span class="mi">784</span><span class="p">,</span> <span class="n">n_hidden</span><span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
+              <span class="n">W</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">bhid</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">bvis</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       Initialize the dA class by specifying the number of visible units (the</span>
+<span class="sd">       dimension d of the input ), the number of hidden units ( the dimension</span>
+<span class="sd">       d&#39; of the latent or hidden space ) and the corruption level. The</span>
+<span class="sd">       constructor also receives symbolic variables for the input, weights and</span>
+<span class="sd">       bias. Such a symbolic variables are useful when, for example the input is</span>
+<span class="sd">       the result of some computations, or when weights are shared between the</span>
+<span class="sd">       dA and an MLP layer. When dealing with SdAs this always happens,</span>
+<span class="sd">       the dA on layer 2 gets as input the output of the dA on layer 1,</span>
+<span class="sd">       and the weights of the dA are used in the second stage of training</span>
+<span class="sd">       to construct an MLP.</span>
+
+<span class="sd">       :type numpy_rng: numpy.random.RandomState</span>
+<span class="sd">       :param numpy_rng: number random generator used to generate weights</span>
+
+<span class="sd">       :type theano_rng: theano.tensor.shared_randomstreams.RandomStreams</span>
+<span class="sd">       :param theano_rng: Theano random generator; if None is given one is generated</span>
+<span class="sd">                    based on a seed drawn from `rng`</span>
+
+<span class="sd">       :type input: theano.tensor.TensorType</span>
+<span class="sd">       :paran input: a symbolic description of the input or None for standalone</span>
+<span class="sd">                     dA</span>
+
+<span class="sd">       :type n_visible: int</span>
+<span class="sd">       :param n_visible: number of visible units</span>
+
+<span class="sd">       :type n_hidden: int</span>
+<span class="sd">       :param n_hidden:  number of hidden units</span>
+
+<span class="sd">       :type W: theano.tensor.TensorType</span>
+<span class="sd">       :param W: Theano variable pointing to a set of weights that should be</span>
+<span class="sd">                 shared belong the dA and another architecture; if dA should</span>
+<span class="sd">                 be standalone set this to None</span>
+
+<span class="sd">       :type bhid: theano.tensor.TensorType</span>
+<span class="sd">       :param bhid: Theano variable pointing to a set of biases values (for</span>
+<span class="sd">                    hidden units) that should be shared belong dA and another</span>
+<span class="sd">                    architecture; if dA should be standalone set this to None</span>
+
+<span class="sd">       :type bvis: theano.tensor.TensorType</span>
+<span class="sd">       :param bvis: Theano variable pointing to a set of biases values (for</span>
+<span class="sd">                    visible units) that should be shared belong dA and another</span>
+<span class="sd">                    architecture; if dA should be standalone set this to None</span>
+
+
+<span class="sd">       &quot;&quot;&quot;</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">n_visible</span> <span class="o">=</span> <span class="n">n_visible</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">n_hidden</span>  <span class="o">=</span> <span class="n">n_hidden</span>
+
+       <span class="c"># create a Theano random generator that gives symbolic random values</span>
+       <span class="k">if</span> <span class="ow">not</span> <span class="n">theano_rng</span> <span class="p">:</span>
+           <span class="n">theano_rng</span> <span class="o">=</span> <span class="n">RandomStreams</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span>
+
+       <span class="c"># note : W&#39; was written as `W_prime` and b&#39; as `b_prime`</span>
+       <span class="k">if</span> <span class="ow">not</span> <span class="n">W</span><span class="p">:</span>
+           <span class="c"># W is initialized with `initial_W` which is uniformely sampled</span>
+           <span class="c"># from -4.*sqrt(6./(n_visible+n_hidden)) and 4.*sqrt(6./(n_hidden+n_visible))</span>
+           <span class="c"># the output of uniform if converted using asarray to dtype</span>
+           <span class="c"># theano.config.floatX so that the code is runable on GPU</span>
+           <span class="n">initial_W</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">numpy_rng</span><span class="p">(</span>
+                     <span class="n">low</span>  <span class="o">=</span> <span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_hidden</span><span class="o">+</span><span class="n">n_visible</span><span class="p">)),</span>
+                     <span class="n">high</span> <span class="o">=</span>  <span class="mi">4</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_hidden</span><span class="o">+</span><span class="n">n_visible</span><span class="p">)),</span>
+                     <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_visible</span><span class="p">,</span> <span class="n">n_hidden</span><span class="p">)),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+           <span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">initial_W</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;W&#39;</span><span class="p">)</span>
+
+       <span class="k">if</span> <span class="ow">not</span> <span class="n">bvis</span><span class="p">:</span>
+           <span class="n">bvis</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_visible</span><span class="p">,</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;bvis&#39;</span><span class="p">)</span>
+
+       <span class="k">if</span> <span class="ow">not</span> <span class="n">bhid</span><span class="p">:</span>
+           <span class="n">bhid</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_hidden</span><span class="p">,</span>
+                                             <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;bhid&#39;</span><span class="p">)</span>
+
+       <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">W</span>
+       <span class="c"># b corresponds to the bias of the hidden</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">bhid</span>
+       <span class="c"># b_prime corresponds to the bias of the visible</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">b_prime</span> <span class="o">=</span> <span class="n">bvis</span>
+       <span class="c"># tied weights, therefore W_prime is W transpose</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">W_prime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">theano_rng</span> <span class="o">=</span> <span class="n">theano_rng</span>
+       <span class="c"># if no input is given, generate a variable representing the input</span>
+       <span class="k">if</span> <span class="nb">input</span> <span class="o">==</span> <span class="bp">None</span> <span class="p">:</span>
+           <span class="c"># we use a matrix because we expect a minibatch of several examples,</span>
+           <span class="c"># each example being a row</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">dmatrix</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;input&#39;</span><span class="p">)</span>
+       <span class="k">else</span><span class="p">:</span>
+           <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="nb">input</span>
+
+       <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_prime</span><span class="p">]</span>
+
+   <span class="k">def</span> <span class="nf">get_corrupted_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">corruption_level</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot; This function keeps ``1-corruption_level`` entries of the inputs the same</span>
+<span class="sd">       and zero-out randomly selected subset of size ``coruption_level``</span>
+<span class="sd">       Note : first argument of theano.rng.binomial is the shape(size) of</span>
+<span class="sd">              random numbers that it should produce</span>
+<span class="sd">              second argument is the number of trials</span>
+<span class="sd">              third argument is the probability of success of any trial</span>
+
+<span class="sd">               this will produce an array of 0s and 1s where 1 has a probability of</span>
+<span class="sd">               1 - ``corruption_level`` and 0 with ``corruption_level``</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+       <span class="k">return</span>  <span class="bp">self</span><span class="o">.</span><span class="n">theano_rng</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span> <span class="n">size</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span>  <span class="mi">1</span> <span class="o">-</span> <span class="n">corruption_level</span><span class="p">)</span> <span class="o">*</span> <span class="nb">input</span>
+
+
+   <span class="k">def</span> <span class="nf">get_hidden_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot; Computes the values of the hidden layer &quot;&quot;&quot;</span>
+       <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+   <span class="k">def</span> <span class="nf">get_reconstructed_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden</span> <span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot; Computes the reconstructed input given the values of the hidden layer &quot;&quot;&quot;</span>
+       <span class="k">return</span>  <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W_prime</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_prime</span><span class="p">)</span>
+
+   <span class="k">def</span> <span class="nf">get_cost_updates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">corruption_level</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">):</span>
+       <span class="sd">&quot;&quot;&quot; This function computes the cost and the updates for one trainng</span>
+<span class="sd">       step of the dA &quot;&quot;&quot;</span>
+
+       <span class="n">tilde_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_corrupted_input</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">corruption_level</span><span class="p">)</span>
+       <span class="n">y</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_hidden_values</span><span class="p">(</span> <span class="n">tilde_x</span><span class="p">)</span>
+       <span class="n">z</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reconstructed_input</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+       <span class="c"># note : we sum over the size of a datapoint; if we are using minibatches,</span>
+       <span class="c">#        L will  be a vector, with one entry per example in minibatch</span>
+       <span class="n">L</span> <span class="o">=</span> <span class="o">-</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span> <span class="p">)</span>
+       <span class="c"># note : L is now a vector, where each element is the cross-entropy cost</span>
+       <span class="c">#        of the reconstruction of the corresponding example of the</span>
+       <span class="c">#        minibatch. We need to compute the average of all these to get</span>
+       <span class="c">#        the cost of the minibatch</span>
+       <span class="n">cost</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+
+       <span class="c"># compute the gradients of the cost of the `dA` with respect</span>
+       <span class="c"># to its parameters</span>
+       <span class="n">gparams</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+       <span class="c"># generate the list of updates</span>
+       <span class="n">updates</span> <span class="o">=</span> <span class="p">{}</span>
+       <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">gparam</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">gparams</span><span class="p">):</span>
+           <span class="n">updates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span> <span class="o">-</span>  <span class="n">learning_rate</span><span class="o">*</span><span class="n">gparam</span>
+
+       <span class="k">return</span> <span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="putting-it-all-together">
+<h2>Putting it All Together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h2>
+<p>It is easy now to construct an instance of our <tt class="docutils literal"><span class="pre">dA</span></tt> class and train
+it.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># allocate symbolic variables for the data</span>
+<span class="n">index</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lscalar</span><span class="p">()</span>    <span class="c"># index to a [mini]batch</span>
+<span class="n">x</span>     <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>  <span class="c"># the data is presented as rasterized images</span>
+
+<span class="c">######################</span>
+<span class="c"># BUILDING THE MODEL #</span>
+<span class="c">######################</span>
+
+<span class="n">rng</span>        <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<span class="n">theano_rng</span> <span class="o">=</span> <span class="n">RandomStreams</span><span class="p">(</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span>
+
+<span class="n">da</span> <span class="o">=</span> <span class="n">dA</span><span class="p">(</span><span class="n">numpy_rng</span> <span class="o">=</span> <span class="n">rng</span><span class="p">,</span> <span class="n">theano_rng</span> <span class="o">=</span> <span class="n">theano_rng</span><span class="p">,</span> <span class="nb">input</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span>
+        <span class="n">n_visible</span> <span class="o">=</span> <span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="n">n_hidden</span> <span class="o">=</span> <span class="mi">500</span><span class="p">)</span>
+
+<span class="n">cost</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">get_cost_updates</span><span class="p">(</span><span class="n">corruption_level</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+                            <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span><span class="p">)</span>
+
+
+<span class="n">train_da</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([</span><span class="n">index</span><span class="p">],</span> <span class="n">cost</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+     <span class="n">givens</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+<span class="c">############</span>
+<span class="c"># TRAINING #</span>
+<span class="c">############</span>
+
+<span class="c"># go through training epochs</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">training_epochs</span><span class="p">):</span>
+    <span class="c"># go through trainng set</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">batch_index</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">):</span>
+        <span class="n">c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_da</span><span class="p">(</span><span class="n">batch_index</span><span class="p">))</span>
+
+    <span class="k">print</span> <span class="s">&#39;Training epoch </span><span class="si">%d</span><span class="s">, cost &#39;</span><span class="o">%</span><span class="n">epoch</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span>
+
+<span class="n">training_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="p">(</span><span class="s">&#39;Training took </span><span class="si">%f</span><span class="s"> minutes&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">pretraining_time</span><span class="o">/</span><span class="mf">60.</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>In order to get a feeling of what the network learned we are going to
+plot the filters (defined by the weight matrix). Bare in mind however,
+that this does not provide the entire story,
+since we neglect the biases and plot the weights up to a multiplicative
+constant (weights are converted to values between 0 and 1).</p>
+<p>To plot our filters we will need the help of <tt class="docutils literal"><span class="pre">tile_raster_images</span></tt> (see
+<a class="reference external" href="utilities.html#how-to-plot"><em>Plotting Samples and Filters</em></a>) so we urge the reader to familiarize himself with
+it. Also using the help of PIL library, the following lines of code will
+save the filters as an image :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">image</span> <span class="o">=</span> <span class="n">PIL</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">tile_raster_images</span><span class="p">(</span><span class="n">X</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+             <span class="n">img_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">28</span><span class="p">,</span><span class="mi">28</span><span class="p">),</span><span class="n">tile_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span>
+             <span class="n">tile_spacing</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+<span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;filters_corruption_30.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-the-code">
+<h2>Running the Code<a class="headerlink" href="#running-the-code" title="Permalink to this headline">¶</a></h2>
+<p>To run the code :</p>
+<div class="highlight-bash"><div class="highlight"><pre>python dA.py
+</pre></div>
+</div>
+<p>The resulted filters when we do not use any noise are :</p>
+<div class="figure align-center">
+<img alt="_images/filters_corruption_0.png" src="_images/filters_corruption_0.png" />
+</div>
+<p>The filters for 30 percent noise :</p>
+<div class="figure align-center">
+<img alt="_images/filters_corruption_30.png" src="_images/filters_corruption_30.png" />
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="SdA.html" title="Stacked Denoising Autoencoders (SdA)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="lenet.html" title="Convolutional Neural Networks (LeNet)"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

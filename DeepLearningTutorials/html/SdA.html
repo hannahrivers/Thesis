@@ -1,0 +1,514 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Stacked Denoising Autoencoders (SdA) &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Restricted Boltzmann Machines (RBM)" href="rbm.html" />
+    <link rel="prev" title="Denoising Autoencoders (dA)" href="dA.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="rbm.html" title="Restricted Boltzmann Machines (RBM)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dA.html" title="Denoising Autoencoders (dA)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Stacked Denoising Autoencoders (SdA)</a><ul>
+<li><a class="reference external" href="#stacked-autoencoders">Stacked Autoencoders</a></li>
+<li><a class="reference external" href="#putting-it-all-together">Putting it all together</a></li>
+<li><a class="reference external" href="#running-the-code">Running the Code</a></li>
+<li><a class="reference external" href="#tips-and-tricks">Tips and Tricks</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="dA.html"
+                                  title="previous chapter">Denoising Autoencoders (dA)</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="rbm.html"
+                                  title="next chapter">Restricted Boltzmann Machines (RBM)</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/SdA.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="stacked-denoising-autoencoders-sda">
+<span id="sda"></span><h1>Stacked Denoising Autoencoders (SdA)<a class="headerlink" href="#stacked-denoising-autoencoders-sda" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This section assumes the reader has already read through <a class="reference external" href="logreg.html"><em>Classifying MNIST digits using Logistic Regression</em></a>
+and <a class="reference external" href="mlp.html"><em>Multilayer Perceptron</em></a>. Additionally it uses the following Theano functions
+and concepts : <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html?highlight=tanh">T.tanh</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-shared-variables">shared variables</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/adding.html#adding-two-scalars">basic arithmetic ops</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#computing-gradients">T.grad</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-random-numbers">Random numbers</a>, <a class="reference external" href="http://deeplearning.net/software/theano/library/config.html#config.floatX">floatX</a>. If you intend to run the code on GPU also read <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/using_gpu.html">GPU</a>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/SdA.py">here</a>.</p>
+</div>
+<p>The Stacked Denoising Autoencoder (SdA) is an extension of the stacked
+autoencoder <a class="reference external" href="references.html#bengio07">[Bengio07]</a> and it was introduced in <a class="reference external" href="references.html#vincent08">[Vincent08]</a>.</p>
+<p>This tutorial builds on the previous tutorial <a class="reference external" href="dA.html#da"><em>Denoising Autoencoders</em></a> and we recommend,
+especially if you do not have experience with autoencoders, to read it
+before going any further.</p>
+<div class="section" id="stacked-autoencoders">
+<span id="id3"></span><h2>Stacked Autoencoders<a class="headerlink" href="#stacked-autoencoders" title="Permalink to this headline">¶</a></h2>
+<p>The denoising autoencoders can be stacked to form a deep network by
+feeding the latent representation (output code)
+of the denoising auto-encoder found on the layer
+below as input to the current layer. The <strong>unsupervised pre-training</strong> of such an
+architecture is done one layer at a time. Each layer is trained as
+a denoising auto-encoder by minimizing the reconstruction of its input
+(which is the output code of the previous layer).
+Once the first <img class="math" src="_images/math/8c325612684d41304b9751c175df7bcc0f61f64f.png" alt="k"/> layers
+are trained, we can train the <img class="math" src="_images/math/f05f085f774fc8ab50676b778b86a1f1d1114fc8.png" alt="k+1"/>-th layer because we can now
+compute the code or latent representation from the layer below.
+Once all layers are pre-trained, the network goes through a second stage
+of training called <strong>fine-tuning</strong>. Here we consider <strong>supervised fine-tuning</strong>
+where we want to minimize prediction error on a supervised task.
+For this we first add a logistic regression
+layer on top of the network (more precisely on the output code of the
+output layer). We then
+train the entire network as we would train a multilayer
+perceptron. At this point, we only consider the encoding parts of
+each auto-encoder.
+This stage is supervised, since now we use the target class during
+training (see the <a class="reference external" href="mlp.html#mlp"><em>Multilayer Perceptron</em></a> for details on the multilayer perceptron).</p>
+<p>This can be easily implemented in Theano, using the class defined
+before for a denoising autoencoder. We can see the stacked denoising
+autoencoder as having two facades, one is a list of
+autoencoders, the other is an MLP. During pre-training we use the first facade, i.e we treat our model
+as a list of autoencoders, and train each autoencoder seperately. In the
+second stage of training, we use the second facade. These two
+facedes are linked by the fact that the autoencoders and the sigmoid layers of
+the MLP share parameters, and the fact that autoencoders get as input latent
+representations of intermediate layers of the MLP.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">SdA</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numpy_rng</span><span class="p">,</span> <span class="n">theano_rng</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">n_ins</span> <span class="o">=</span> <span class="mi">784</span><span class="p">,</span>
+               <span class="n">hidden_layers_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">500</span><span class="p">,</span><span class="mi">500</span><span class="p">],</span> <span class="n">n_outs</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+               <span class="n">corruption_levels</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]):</span>
+      <span class="sd">&quot;&quot;&quot; This class is made to support a variable number of layers.</span>
+
+<span class="sd">      :type numpy_rng: numpy.random.RandomState</span>
+<span class="sd">      :param numpy_rng: numpy random number generator used to draw initial</span>
+<span class="sd">                  weights</span>
+
+<span class="sd">      :type theano_rng: theano.tensor.shared_randomstreams.RandomStreams</span>
+<span class="sd">      :param theano_rng: Theano random generator; if None is given one is</span>
+<span class="sd">                         generated based on a seed drawn from `rng`</span>
+
+<span class="sd">      :type n_ins: int</span>
+<span class="sd">      :param n_ins: dimension of the input to the sdA</span>
+
+<span class="sd">      :type n_layers_sizes: list of ints</span>
+<span class="sd">      :param n_layers_sizes: intermediate layers size, must contain</span>
+<span class="sd">                             at least one value</span>
+
+<span class="sd">      :type n_outs: int</span>
+<span class="sd">      :param n_outs: dimension of the output of the network</span>
+
+<span class="sd">      :type corruption_levels: list of float</span>
+<span class="sd">      :param corruption_levels: amount of corruption to use for each</span>
+<span class="sd">                                layer</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+
+      <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid_layers</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">dA_layers</span>      <span class="o">=</span> <span class="p">[]</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">params</span>         <span class="o">=</span> <span class="p">[]</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span>       <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hidden_layers_sizes</span><span class="p">)</span>
+
+      <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+      <span class="k">if</span> <span class="ow">not</span> <span class="n">theano_rng</span><span class="p">:</span>
+          <span class="n">theano_rng</span> <span class="o">=</span> <span class="n">RandomStreams</span><span class="p">(</span><span class="n">numpy_rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span>
+      <span class="c"># allocate symbolic variables for the data</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">x</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>  <span class="c"># the data is presented as rasterized images</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">y</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">ivector</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span> <span class="c"># the labels are presented as 1D vector of</span>
+                               <span class="c"># [int] labels</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">self.sigmoid_layers</span></tt> will store the sigmoid layers of the MLP facade, while
+<tt class="docutils literal"><span class="pre">self.dA_layers</span></tt> will store  the denoising autoencoder associated with the layers of the MLP.</p>
+<p>Next step, we construct <tt class="docutils literal"><span class="pre">n_layers</span></tt> sigmoid layers (we use the
+<tt class="docutils literal"><span class="pre">SigmoidalLayer</span></tt> class introduced in <a class="reference external" href="mlp.html#mlp"><em>Multilayer Perceptron</em></a>, with the only
+modification that we replaced the non-linearity from <tt class="docutils literal"><span class="pre">tanh</span></tt> to the
+logistic function <img class="math" src="_images/math/5724261979966cc0a9071a92ce39f4aa238e101f.png" alt="s(x) = \frac{1}{1+e^{-x}}"/>) and <tt class="docutils literal"><span class="pre">n_layers</span></tt>
+denoising autoencoders, where <tt class="docutils literal"><span class="pre">n_layers</span></tt> is the depth of our model.
+We link the sigmoid layers such that they form an MLP, and construct
+each denoising autoencoder such that they share the weight matrix and the
+bias of the encoding part with its corresponding sigmoid layer.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="p">):</span>
+     <span class="c"># construct the sigmoidal layer</span>
+
+     <span class="c"># the size of the input is either the number of hidden units of</span>
+     <span class="c"># the layer below or the input size if we are on the first layer</span>
+     <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">:</span>
+         <span class="n">input_size</span> <span class="o">=</span> <span class="n">n_ins</span>
+     <span class="k">else</span><span class="p">:</span>
+         <span class="n">input_size</span> <span class="o">=</span> <span class="n">hidden_layers_sizes</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+     <span class="c"># the input to this layer is either the activation of the hidden</span>
+     <span class="c"># layer below or the input of the SdA if you are on the first</span>
+     <span class="c"># layer</span>
+     <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">:</span>
+         <span class="n">layer_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+     <span class="k">else</span><span class="p">:</span>
+         <span class="n">layer_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid_layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">output</span>
+
+     <span class="n">sigmoid_layer</span> <span class="o">=</span> <span class="n">SigmoidalLayer</span><span class="p">(</span><span class="n">rng</span>   <span class="o">=</span> <span class="n">rng</span><span class="p">,</span>
+                                    <span class="nb">input</span> <span class="o">=</span> <span class="n">layer_input</span><span class="p">,</span>
+                                    <span class="n">n_in</span>  <span class="o">=</span> <span class="n">input_size</span><span class="p">,</span>
+                                    <span class="n">n_out</span> <span class="o">=</span> <span class="n">hidden_layers_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">)</span>
+     <span class="c"># add the layer to our list of layers</span>
+     <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sigmoid_layer</span><span class="p">)</span>
+     <span class="c"># its arguably a philosophical question...</span>
+     <span class="c"># but we are going to only declare that the parameters of the</span>
+     <span class="c"># sigmoid_layers are parameters of the StackedDAA</span>
+     <span class="c"># the visible biases in the dA are parameters of those</span>
+     <span class="c"># dA, but not the SdA</span>
+     <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sigmoid_layer</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+     <span class="c"># Construct a denoising autoencoder that shared weights with this</span>
+     <span class="c"># layer</span>
+     <span class="n">dA_layer</span> <span class="o">=</span> <span class="n">dA</span><span class="p">(</span><span class="n">rng</span> <span class="o">=</span> <span class="n">rng</span><span class="p">,</span> <span class="n">trng</span> <span class="o">=</span> <span class="n">trng</span><span class="p">,</span> <span class="nb">input</span> <span class="o">=</span> <span class="n">layer_input</span><span class="p">,</span>
+                   <span class="n">n_visible</span> <span class="o">=</span> <span class="n">input_size</span><span class="p">,</span>
+                   <span class="n">n_hidden</span>  <span class="o">=</span> <span class="n">hidden_layers_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                   <span class="n">corruption_level</span> <span class="o">=</span> <span class="n">corruption_levels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                   <span class="n">W</span> <span class="o">=</span> <span class="n">sigmoid_layer</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">bhid</span> <span class="o">=</span> <span class="n">sigmoid_layer</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+     <span class="bp">self</span><span class="o">.</span><span class="n">dA_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dA_layer</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All we need now is to add the logistic layer on top of the sigmoid
+layers such that we have an MLP. We will
+use the <tt class="docutils literal"><span class="pre">LogisticRegression</span></tt> class introduced in <a class="reference external" href="logreg.html#logreg"><em>Classifying MNIST digits using Logistic Regression</em></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># We now need to add a logistic layer on top of the MLP</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">logLayer</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span>\
+                 <span class="nb">input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid_layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>\
+                 <span class="n">n_in</span> <span class="o">=</span> <span class="n">hidden_layers_sizes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">n_out</span> <span class="o">=</span> <span class="n">n_outs</span><span class="p">)</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logLayer</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+<span class="c"># construct a function that implements one step of finetunining</span>
+
+<span class="c"># compute the cost for second phase of training,</span>
+<span class="c"># defined as the negative log likelihood</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">finetune_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logLayer</span><span class="o">.</span><span class="n">negative_log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+<span class="c"># compute the gradients with respect to the model parameters</span>
+<span class="c"># symbolic variable that points to the number of errors made on the</span>
+<span class="c"># minibatch given by self.x and self.y</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logLayer</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The class also provides a method that generates training functions for
+each of the denoising autoencoder associated with the different layers.
+They are returned as a list, where element <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/> is a function that
+implements one step of training the <tt class="docutils literal"><span class="pre">dA</span></tt> correspoinding to layer
+<img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">pretraining_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_set_x</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Generates a list of functions, each of them implementing one</span>
+<span class="sd">    step in trainnig the dA corresponding to the layer with same index.</span>
+<span class="sd">    The function will require as input the minibatch index, and to train</span>
+<span class="sd">    a dA you just need to iterate, calling the corresponding function on</span>
+<span class="sd">    all minibatch indexes.</span>
+
+<span class="sd">    :type train_set_x: theano.tensor.TensorType</span>
+<span class="sd">    :param train_set_x: Shared variable that contains all datapoints used</span>
+<span class="sd">                        for training the dA</span>
+
+<span class="sd">    :type batch_size: int</span>
+<span class="sd">    :param batch_size: size of a [mini]batch</span>
+
+<span class="sd">    :type learning_rate: float</span>
+<span class="sd">    :param learning_rate: learning rate used during training for any of</span>
+<span class="sd">                          the dA layers</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># index to a [mini]batch</span>
+    <span class="n">index</span>            <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lscalar</span><span class="p">(</span><span class="s">&#39;index&#39;</span><span class="p">)</span>   <span class="c"># index to a minibatch</span>
+</pre></div>
+</div>
+<p>In order to be able to change the corruption level or the learning rate
+during training we associate a Theano variable to them.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">corruption_level</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s">&#39;corruption&#39;</span><span class="p">)</span>    <span class="c"># amount of corruption to use</span>
+<span class="n">learning_rate</span>    <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s">&#39;lr&#39;</span><span class="p">)</span>    <span class="c"># learning rate to use</span>
+<span class="c"># number of batches</span>
+<span class="n">n_batches</span> <span class="o">=</span> <span class="n">train_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">batch_size</span>
+<span class="c"># begining of a batch, given `index`</span>
+<span class="n">batch_begin</span> <span class="o">=</span> <span class="n">index</span> <span class="o">*</span> <span class="n">batch_size</span>
+<span class="c"># ending of a batch given `index`</span>
+<span class="n">batch_end</span> <span class="o">=</span> <span class="n">batch_begin</span><span class="o">+</span><span class="n">batch_size</span>
+
+<span class="n">pretrain_fns</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">dA</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dA_layers</span><span class="p">:</span>
+    <span class="c"># get the cost and the updates list</span>
+    <span class="n">cost</span><span class="p">,</span><span class="n">updates</span> <span class="o">=</span> <span class="n">dA</span><span class="o">.</span><span class="n">get_cost_updates</span><span class="p">(</span> <span class="n">corruption_level</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">)</span>
+    <span class="c"># compile the theano function</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">,</span>
+                      <span class="n">theano</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">corruption_level</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">),</span>
+                      <span class="n">theano</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)],</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span>
+            <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+            <span class="n">givens</span>  <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="p">:</span><span class="n">train_set_x</span><span class="p">[</span><span class="n">batch_begin</span><span class="p">:</span><span class="n">batch_end</span><span class="p">]})</span>
+    <span class="c"># append `fn` to the list of functions</span>
+    <span class="n">pretrain_fns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+
+<span class="k">return</span> <span class="n">pretrain_fns</span>
+</pre></div>
+</div>
+<p>Now any function <tt class="docutils literal"><span class="pre">pretrain_fns[i]</span></tt> takes as arguments <tt class="docutils literal"><span class="pre">index</span></tt> and
+optionally <tt class="docutils literal"><span class="pre">corruption</span></tt> &#8211; the corruption level or <tt class="docutils literal"><span class="pre">lr</span></tt> &#8211; the
+learning rate. Note that the name of the parameters are the name given
+to the Theano variables when they are constructed, not the name of the
+python variables (<tt class="docutils literal"><span class="pre">learning_rate</span></tt> or <tt class="docutils literal"><span class="pre">corruption_level</span></tt>). Keep this
+in mind when working with Theano.</p>
+<p>In the same fashion we build a method for constructing function required
+during finetuning ( a <tt class="docutils literal"><span class="pre">train_model</span></tt>, a <tt class="docutils literal"><span class="pre">validate_model</span></tt> and a
+<tt class="docutils literal"><span class="pre">test_model</span></tt> funcion).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">build_finetune_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Generates a function `train` that implements one step of</span>
+<span class="sd">    finetuning, a function `validate` that computes the error on</span>
+<span class="sd">    a batch from the validation set, and a function `test` that</span>
+<span class="sd">    computes the error on a batch from the testing set</span>
+
+<span class="sd">    :type datasets: list of pairs of theano.tensor.TensorType</span>
+<span class="sd">    :param datasets: It is a list that contain all the datasets;</span>
+<span class="sd">                     the has to contain three pairs, `train`,</span>
+<span class="sd">                     `valid`, `test` in this order, where each pair</span>
+<span class="sd">                     is formed of two Theano variables, one for the</span>
+<span class="sd">                     datapoints, the other for the labels</span>
+
+<span class="sd">    :type batch_size: int</span>
+<span class="sd">    :param batch_size: size of a minibatch</span>
+
+<span class="sd">    :type learning_rate: float</span>
+<span class="sd">    :param learning_rate: learning rate used during finetune stage</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="p">(</span><span class="n">train_set_x</span><span class="p">,</span> <span class="n">train_set_y</span><span class="p">)</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">valid_set_x</span><span class="p">,</span> <span class="n">valid_set_y</span><span class="p">)</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">test_set_x</span> <span class="p">,</span> <span class="n">test_set_y</span> <span class="p">)</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="c"># compute number of minibatches for training, validation and testing</span>
+    <span class="n">n_valid_batches</span> <span class="o">=</span> <span class="n">valid_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">batch_size</span>
+    <span class="n">n_test_batches</span>  <span class="o">=</span> <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="o">/</span> <span class="n">batch_size</span>
+
+    <span class="n">index</span>   <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lscalar</span><span class="p">(</span><span class="s">&#39;index&#39;</span><span class="p">)</span>    <span class="c"># index to a [mini]batch</span>
+
+    <span class="c"># compute the gradients with respect to the model parameters</span>
+    <span class="n">gparams</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finetune_cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="c"># compute list of fine-tuning updates</span>
+    <span class="n">updates</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">gparam</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">gparams</span><span class="p">):</span>
+        <span class="n">updates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span> <span class="o">-</span> <span class="n">gparam</span><span class="o">*</span><span class="n">learning_rate</span>
+
+    <span class="n">train_fn</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>
+          <span class="n">outputs</span> <span class="o">=</span>   <span class="bp">self</span><span class="o">.</span><span class="n">finetune_cost</span><span class="p">,</span>
+          <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+          <span class="n">givens</span>  <span class="o">=</span> <span class="p">{</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="p">:</span> <span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="p">:</span> <span class="n">train_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="n">test_score_i</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">,</span>
+             <span class="n">givens</span> <span class="o">=</span> <span class="p">{</span>
+               <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">:</span> <span class="n">test_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+               <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">:</span> <span class="n">test_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="n">valid_score_i</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">,</span>
+          <span class="n">givens</span> <span class="o">=</span> <span class="p">{</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">:</span> <span class="n">valid_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">:</span> <span class="n">valid_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="c"># Create a function that scans the entire validation set</span>
+    <span class="k">def</span> <span class="nf">valid_score</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">valid_score_i</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_valid_batches</span><span class="p">)]</span>
+
+    <span class="c"># Create a function that scans the entire test set</span>
+    <span class="k">def</span> <span class="nf">test_score</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">test_score_i</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_test_batches</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">train_fn</span><span class="p">,</span> <span class="n">valid_score</span><span class="p">,</span> <span class="n">test_score</span>
+</pre></div>
+</div>
+<p>Note that the returned <tt class="docutils literal"><span class="pre">valid_score</span></tt> and <tt class="docutils literal"><span class="pre">test_score</span></tt> are not Theano
+functions, but rather python functions that also loop over the entire
+validation set and the entire test set producing a list of the losses
+over these sets.</p>
+</div>
+<div class="section" id="putting-it-all-together">
+<h2>Putting it all together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h2>
+<p>The few lines of code below constructs the stacked denoising
+autoencoder :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">numpy_rng</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;... building the model&#39;</span>
+<span class="c"># construct the stacked denoising autoencoder class</span>
+<span class="n">sda</span> <span class="o">=</span> <span class="n">SdA</span><span class="p">(</span> <span class="n">numpy_rng</span> <span class="o">=</span> <span class="n">numpy_rng</span><span class="p">,</span> <span class="n">n_ins</span> <span class="o">=</span> <span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span>
+                  <span class="n">hidden_layers_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">],</span>
+                  <span class="n">n_outs</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There are two stages in training this network, a layer-wise pre-training and
+fine-tuning afterwards.</p>
+<p>For the pre-training stage, we will loop over all the layers of the
+network. For each layer we will use the compiled theano function that
+implements a SGD step towards optimizing the weights for reducing
+the reconstruction cost of that layer. This function will be applied
+to the training set for a fixed number of epochs given by
+<tt class="docutils literal"><span class="pre">pretraining_epochs</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#########################</span>
+<span class="c"># PRETRAINING THE MODEL #</span>
+<span class="c">#########################</span>
+<span class="k">print</span> <span class="s">&#39;... getting the pretraining functions&#39;</span>
+<span class="n">pretraining_fns</span> <span class="o">=</span> <span class="n">sda</span><span class="o">.</span><span class="n">pretraining_functions</span><span class="p">(</span>
+                                    <span class="n">train_set_x</span>   <span class="o">=</span> <span class="n">train_set_x</span><span class="p">,</span>
+                                    <span class="n">batch_size</span>    <span class="o">=</span> <span class="n">batch_size</span> <span class="p">)</span>
+
+<span class="k">print</span> <span class="s">&#39;... pre-training the model&#39;</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+<span class="c">## Pre-train layer-wise</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">sda</span><span class="o">.</span><span class="n">n_layers</span><span class="p">):</span>
+    <span class="c"># go through pretraining epochs</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pretraining_epochs</span><span class="p">):</span>
+        <span class="c"># go through the training set</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">batch_index</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">):</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">pretraining_fns</span><span class="p">[</span><span class="n">i</span><span class="p">](</span><span class="n">index</span> <span class="o">=</span> <span class="n">batch_index</span><span class="p">,</span>
+                     <span class="n">corruption</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">lr</span> <span class="o">=</span> <span class="n">pretrain_lr</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;Pre-training layer </span><span class="si">%i</span><span class="s">, epoch </span><span class="si">%d</span><span class="s">, cost &#39;</span><span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">epoch</span><span class="p">),</span><span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="p">(</span><span class="s">&#39;Pretraining took </span><span class="si">%f</span><span class="s"> minutes&#39;</span> <span class="o">%</span><span class="p">((</span><span class="n">end_time</span><span class="o">-</span><span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mf">60.</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The fine-tuning loop is very similar with the one in the <a class="reference external" href="mlp.html#mlp"><em>Multilayer Perceptron</em></a>, the
+only difference is that we will use now the functions given by
+<img class="math" src="_images/math/1735cdfbfbfc569c028c02ee182eb0c6b1e00475.png" alt="build_finetune_functions"/>  .</p>
+</div>
+<div class="section" id="running-the-code">
+<h2>Running the Code<a class="headerlink" href="#running-the-code" title="Permalink to this headline">¶</a></h2>
+<p>The user can run the code by calling:</p>
+<div class="highlight-bash"><div class="highlight"><pre>python code/SdA.py
+</pre></div>
+</div>
+<p>By default the code runs 15 pre-training epochs for each layer, with a batch
+size of 1. The  corruption level for the first layer is 0.1, for the second
+0.2 and 0.3 for the third. The pretraining learning rate is was 0.001 and
+the finetuning learning rate is 0.1. Pre-training takes 585.01 minutes, with
+an average of 13 minutes per epoch. Fine-tuning is completed after 36 epochs
+in 444.2 minutes, with an average of 12.34 minutes per epoch. The final
+validation score is 1.39% with a testing score of 1.3%.
+These results were obtained on a machine with an Intel
+Xeon E5430 &#64; 2.66GHz CPU, with a single-threaded GotoBLAS.</p>
+</div>
+<div class="section" id="tips-and-tricks">
+<h2>Tips and Tricks<a class="headerlink" href="#tips-and-tricks" title="Permalink to this headline">¶</a></h2>
+<p>One way to improve the running time of your code (given that you have
+sufficient memory available), is to compute how the network, up to layer
+<img class="math" src="_images/math/7dc6fab4c2fdb4e9046030fbfdcf6ea721b05602.png" alt="k-1"/>, transforms your data. Namely, you start by training your first
+layer dA. Once it is trained, you can compute the hidden units values for
+every datapoint in your dataset and store this as a new dataset that you will
+use to train the dA corresponding to layer 2. Once you trained the dA for
+layer 2, you compute, in a similar fashion, the dataset for layer 3 and so on.
+You can see now, that at this point, the dAs are trained individually, and
+they just provide (one to the other) a non-linear transformation of the input.
+Once all dAs are trained, you can start fine-tunning the model.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="rbm.html" title="Restricted Boltzmann Machines (RBM)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dA.html" title="Denoising Autoencoders (dA)"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

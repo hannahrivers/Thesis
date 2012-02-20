@@ -1,0 +1,744 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Hybrid Monte-Carlo Sampling &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Hybrid Monte-Carlo Sampling</a><ul>
+<li><a class="reference external" href="#theory">Theory</a></li>
+<li><a class="reference external" href="#implementing-hmc-using-theano">Implementing HMC Using Theano</a></li>
+<li><a class="reference external" href="#testing-our-sampler">Testing our Sampler</a></li>
+<li><a class="reference external" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/hmc.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="hybrid-monte-carlo-sampling">
+<span id="hmc"></span><h1>Hybrid Monte-Carlo Sampling<a class="headerlink" href="#hybrid-monte-carlo-sampling" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is an advanced tutorial, which shows how one can implemented Hybrid
+Monte-Carlo (HMC) sampling using Theano. We assume the reader is already
+familiar with Theano and energy-based models such as the RBM.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/mcrbm/hmc.py">here</a>.</p>
+</div>
+<div class="section" id="theory">
+<h2>Theory<a class="headerlink" href="#theory" title="Permalink to this headline">¶</a></h2>
+<p>Maximum likelihood learning of energy-based models requires a robust algorithm
+to sample negative phase particles (see Eq.(4) of the <a class="reference external" href="rbm.html"><em>Restricted Boltzmann Machines (RBM)</em></a> tutorial).
+When training RBMs with CD or PCD, this is typically done with block Gibbs
+sampling, where the conditional distributions <img class="math" src="_images/math/0a23d106ee34d7b2bb5fac595214f4801656dfea.png" alt="p(h|v)"/> and
+<img class="math" src="_images/math/20397cf0a84cc8d8b3d13c92a919bca378864331.png" alt="p(v|h)"/> are used as the transition operators of the Markov chain.</p>
+<p>In certain cases however, these conditional distributions might be difficult
+to sample from (i.e. requiring expensive matrix inversions, as in the case of
+the &#8220;mean-covariance RBM&#8221;). Also, even if Gibbs sampling can be done
+efficiently, it nevertheless operates via a random walk which might not be
+statistically efficient for some distributions.
+In this context, and when sampling from continuous variables, Hybrid Monte
+Carlo (HMC) can prove to be a powerful tool <a class="reference internal" href="#duane87">[Duane87]</a>. It avoids random walk
+behavior by simulating a physical system governed by Hamiltonian dynamics,
+potentially avoiding tricky conditional distributions in the process.</p>
+<p>In HMC, model samples are obtained by simulating a physical system, where
+particles move about a high-dimensional landscape, subject to potential and
+kinetic energies.  Adapting the notation from <a class="reference internal" href="#neal93">[Neal93]</a>, particles are
+characterized by a position vector or state <img class="math" src="_images/math/af7aed314be3e53820cc67d375ce5bcec0b84f95.png" alt="s \in \mathcal{R}^D"/> and
+velocity vector <img class="math" src="_images/math/4f40cf600efe909bf27bd9292a83426e6bc30d4a.png" alt="\phi \in \mathcal{R}^D"/>. The combined state of a
+particle is denoted as <img class="math" src="_images/math/9cff961a54da118a2235ff419bd28fea87365657.png" alt="\chi=(s,\phi)"/>. The Hamiltonian is then defined
+as the sum of potential energy <img class="math" src="_images/math/a1b0b60d25dc2d168b10962a54d149adb7c66f6e.png" alt="E(s)"/> (same energy function defined by
+energy-based models) and kinetic energy <img class="math" src="_images/math/790e2d18e52687ac0cccc6723ea1e540990d6000.png" alt="K(\phi)"/>, as follows:</p>
+<div class="math">
+<p><img src="_images/math/37d3ed5937bf469fa326412ad2c49dab312f185c.png" alt="\mathcal{H}(s,\phi) = E(s) + K(\phi)
+                          = E(s) + \frac{1}{2} \sum_i \phi_i^2" /></p>
+</div><p>Instead of sampling <img class="math" src="_images/math/f71d06c0fa774bbe10381d8b054fdfda39cc75f2.png" alt="p(s)"/> directly, HMC operates by sampling from the
+canonical distribution
+<img class="math" src="_images/math/019606a1b89bddcb459e1f027e8e8005bc052823.png" alt="p(s,\phi) = \frac{1}{Z} \exp(-\mathcal{H}(s,\phi))=p(s)p(\phi)"/>.
+Because the two variables are independent, marginalizing over
+<img class="math" src="_images/math/2c175f60eecef1de7560c3bdea495d69f26f719d.png" alt="\phi"/> is trivial and recovers the original distribution of
+interest.</p>
+<p><strong>Hamiltonian Dynamics</strong></p>
+<p>State <img class="math" src="_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s"/> and velocity <img class="math" src="_images/math/2c175f60eecef1de7560c3bdea495d69f26f719d.png" alt="\phi"/> are modified such that
+<img class="math" src="_images/math/4fa92c1594f0dbdf2591f852e8bd124c9c797350.png" alt="\mathcal{H}(s,\phi)"/> remains constant throughout the simulation.
+The differential equations are given by:</p>
+<div class="math" id="equation-ds_dt">
+<p><span class="eqno">(1)</span><img src="_images/math/c5d308e0825120e6c966c9e0c11d106eacb661bf.png" alt="\frac{ds_i}{dt} &amp;= \frac{\partial \mathcal{H}}{\partial \phi_i} = \phi_i \\
+\frac{d\phi_i}{dt} &amp;= - \frac{\partial \mathcal{H}}{\partial s_i}
+                 = - \frac{\partial E}{\partial s_i}" /></p>
+</div><p>As shown in <a class="reference internal" href="#neal93">[Neal93]</a>, the above transformation preserves volume and is
+reversible. The above dynamics can thus be used as transition operators of a
+Markov chain and will leave <img class="math" src="_images/math/c78d8b4ae82f2930fcd450f0b86fea294d32f3a6.png" alt="p(s,\phi)"/> invariant. That chain by itself
+is not ergodic however, since simulating the dynamics maintains a fixed
+Hamiltonian <img class="math" src="_images/math/4fa92c1594f0dbdf2591f852e8bd124c9c797350.png" alt="\mathcal{H}(s,\phi)"/>.
+HMC thus alternates hamiltonian dynamic steps, with Gibbs sampling of the
+velocity. Because <img class="math" src="_images/math/f71d06c0fa774bbe10381d8b054fdfda39cc75f2.png" alt="p(s)"/> and <img class="math" src="_images/math/f7d4d76506a0e130b4ba583201f964d359582777.png" alt="p(\phi)"/> are independent, sampling
+<img class="math" src="_images/math/7a01c98a3b2243d4301a1b48fe6fb57fe8e81b6d.png" alt="\phi_{new} \sim p(\phi|s)"/> is trivial since <img class="math" src="_images/math/25d76f21d1baf79ed2832d8af70467f6b5c4e255.png" alt="p(\phi|s)=p(\phi)"/>,
+where <img class="math" src="_images/math/f7d4d76506a0e130b4ba583201f964d359582777.png" alt="p(\phi)"/> is often taken to be the uni-variate Gaussian.</p>
+<p><strong>The Leap-Frog Algorithm</strong></p>
+<p>In practice, we cannot simulate Hamiltonian dynamics exactly because of the
+problem of time discretization. There are several ways one can do this. To
+maintain invariance of the Markov chain however, care must be taken to
+preserve the properties of volume conservation and time reversibility.  The
+<strong>leap-frog algorithm</strong> maintains these properties and operates in 3 steps:</p>
+<div class="math" id="equation-leap-frog">
+<p><span class="eqno">(2)</span><img src="_images/math/20fa096984b0ce4ec34b10d1b25f15d1d29433bc.png" alt="\phi_i(t + \epsilon/2) &amp;= \phi_i(t) - \frac{\epsilon}{2} \frac{\partial{}}{\partial s_i} E(s(t)) \\
+s_i(t + \epsilon) &amp;= s_i(t) + \epsilon \phi_i(t + \epsilon/2) \\
+\phi_i(t + \epsilon) &amp;= \phi_i(t + \epsilon/2) - \frac{\epsilon}{2} \frac{\partial{}}{\partial s_i} E(s(t + \epsilon)) \\" /></p>
+</div><p>We thus perform a half-step update of the velocity at time
+<img class="math" src="_images/math/9b1b726858ff6e6d981df27accac6a5de9aef50f.png" alt="t+\epsilon/2"/>, which is then used to compute <img class="math" src="_images/math/f9b86d133683d7ee60c89c0dbe339db4ec30424e.png" alt="s(t + \epsilon)"/>
+and <img class="math" src="_images/math/b7953377522c86920fa9bbc1848beb00e7f9a053.png" alt="\phi(t + \epsilon)"/>.</p>
+<p><strong>Accept / Reject</strong></p>
+<p>In practice, using finite stepsizes <img class="math" src="_images/math/eaf4418fbe935c15a606516d8f55dc380cd8e822.png" alt="\epsilon"/> will not preserve
+<img class="math" src="_images/math/4fa92c1594f0dbdf2591f852e8bd124c9c797350.png" alt="\mathcal{H}(s,\phi)"/> exactly and will introduce bias in the simulation.
+Also, rounding errors due to the use of floating point numbers means that the
+above transformation will not be perfectly reversible.</p>
+<p>HMC cancels these effects <strong>exactly</strong> by adding a Metropolis accept/reject
+stage, after <img class="math" src="_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> leapfrog steps. The new state <img class="math" src="_images/math/b04a075404ef1d15e2831e73b175b2cb7f8c1fba.png" alt="\chi' = (s',\phi')"/> is
+accepted with probability <img class="math" src="_images/math/4725580374c6c0581ca294381aa0dc94bb9e7a12.png" alt="p_{acc}(\chi,\chi')"/>, defined as:</p>
+<div class="math">
+<p><img src="_images/math/94589b7938a190c8f8a9b2de78ac45cdfd916c06.png" alt="p_{acc}(\chi,\chi') = min \left( 1, \frac{\exp(-\mathcal{H}(s',\phi')}{\exp(-\mathcal{H}(s,\phi)} \right)" /></p>
+</div><p><strong>HMC Algorithm</strong></p>
+<p>In this tutorial, we obtain a new HMC sample as follows:</p>
+<ol class="arabic simple">
+<li>sample a new velocity from a univariate Gaussian distribution</li>
+<li>perform <img class="math" src="_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> leapfrog steps to obtain the new state <img class="math" src="_images/math/ce1d21c2da6568242f57395edbe4df1ac31e6a6d.png" alt="\chi'"/></li>
+<li>perform accept/reject move of <img class="math" src="_images/math/ce1d21c2da6568242f57395edbe4df1ac31e6a6d.png" alt="\chi'"/></li>
+</ol>
+</div>
+<div class="section" id="implementing-hmc-using-theano">
+<h2>Implementing HMC Using Theano<a class="headerlink" href="#implementing-hmc-using-theano" title="Permalink to this headline">¶</a></h2>
+<p>In Theano, update dictionaries and shared variables provide a natural way to
+implement a sampling algorithm. The current state of the sampler can be
+represented as a Theano shared variable, with HMC updates being implemented by
+the updates dictionary of a Theano function.</p>
+<p>We breakdown the HMC algorithm into the following sub-components:</p>
+<ul class="simple">
+<li><img class="math" src="_images/math/ca9af7561a6457a4b6da0828e58b006922032e27.png" alt="simulate\_dynamics"/>: a symbolic Python function which, given an initial position and velocity, will perform <img class="math" src="_images/math/b655d73d8aa9531b32473864bee273899cd298fa.png" alt="n\_steps"/> leapfrog updates and return the symbolic variables for the proposed state <img class="math" src="_images/math/ce1d21c2da6568242f57395edbe4df1ac31e6a6d.png" alt="\chi'"/>.</li>
+<li><img class="math" src="_images/math/2e0255d0eb35a6173b138e43ef493557b6e1bac5.png" alt="hmc\_move"/>: a symbolic Python function which given a starting position,
+generates <img class="math" src="_images/math/6dcb9b88aaa5f14312835145edf06fb2d0823c29.png" alt="\chi"/> by randomly sampling a velocity vector. It then
+calls <img class="math" src="_images/math/ca9af7561a6457a4b6da0828e58b006922032e27.png" alt="simulate\_dynamics"/> and determines whether the transition <img class="math" src="_images/math/35a3986bfdca837c9d9b891bf09ab61c144460c1.png" alt="\chi
+\rightarrow \chi'"/> is to be accepted.</li>
+<li><img class="math" src="_images/math/931248c6b5692e9e17bce56b46af2588c7b59137.png" alt="hmc\_updates"/>: a Python function which, given the symbolic outputs of <img class="math" src="_images/math/2e0255d0eb35a6173b138e43ef493557b6e1bac5.png" alt="hmc\_move"/>,
+generates the dictionary of updates for a single iteration of HMC.</li>
+<li><img class="math" src="_images/math/88be357e653569445182099bc21eb58062819651.png" alt="HMC\_sampler"/>: a Python helper class which wraps everything together.</li>
+</ul>
+<p><strong>simulate_dynamics</strong></p>
+<p>To perform <img class="math" src="_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> leapfrog steps, we first need to define a function over
+which <img class="math" src="_images/math/7761c11496aa1a0ca320d0656bf493d000cb04b6.png" alt="Scan"/> can iterate over. Instead of implementing Eq. <a href="#equation-leap-frog">(2)</a>
+verbatim, notice that we can obtain <img class="math" src="_images/math/ddce3fec99930a84b7755a41d3fdc97bb82bd9c0.png" alt="s(t + n \epsilon)"/> and
+<img class="math" src="_images/math/ac6297a31f1ed9485f87d9300ade6438d9833598.png" alt="\phi(t + n \epsilon)"/> by performing an initial half-step update for
+<img class="math" src="_images/math/2c175f60eecef1de7560c3bdea495d69f26f719d.png" alt="\phi"/>, followed by <img class="math" src="_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> full-step updates for <img class="math" src="_images/math/ad262b992cbd831ae9bbc6e805140091db34fff2.png" alt="s,\phi"/> and
+one last half-step update for <img class="math" src="_images/math/2c175f60eecef1de7560c3bdea495d69f26f719d.png" alt="\phi"/>. In loop form, this gives:</p>
+<div class="math" id="equation-leap-frog2">
+<p><span class="eqno">(3)</span><img src="_images/math/a99de769f8e3dd968747c2d02522f04759410fb4.png" alt="&amp; \phi_i(t + \epsilon/2) = \phi_i(t) -
+   \frac{\epsilon}{2} \frac{\partial{}}{\partial s_i} E(s(t)) \\
+&amp; s_i(t + \epsilon) = s_i(t) + \epsilon \phi_i(t + \epsilon/2) \\
+&amp; \text{For } m \in [2,n]\text{, perform full updates: } \\
+&amp; \qquad
+  \phi_i(t + (m - 1/2)\epsilon) = \phi_i(t + (m-3/2)\epsilon) -
+      \epsilon \frac{\partial{}}{\partial s_i} E(s(t + (m-1)\epsilon)) \\
+&amp; \qquad
+  s_i(t + m\epsilon) = s_i(t) + \epsilon \phi_i(t + (m-1/2)\epsilon) \\
+&amp; \phi_i(t + n\epsilon) = \phi_i(t + (n-1/2)\epsilon) -
+     \frac{\epsilon}{2} \frac{\partial{}}{\partial s_i} E(s(t + n\epsilon)) \\" /></p>
+</div><p>The inner-loop defined above is implemented by the following <img class="math" src="_images/math/6b53f571e9af9d878266209b3527269c8f0388ea.png" alt="leapfrog"/>
+function, with <img class="math" src="_images/math/0b6a48ae8aa8725a094dcfc35188fd495b4c0066.png" alt="pos"/>, <img class="math" src="_images/math/8197d6fbb444b8e5347ccbd3c04803e841ff8912.png" alt="vel"/> and <img class="math" src="_images/math/48b5108ed51ddd17e3f67025151ad9f470b79798.png" alt="step"/> replacing <img class="math" src="_images/math/ad262b992cbd831ae9bbc6e805140091db34fff2.png" alt="s,\phi"/> and <img class="math" src="_images/math/eaf4418fbe935c15a606516d8f55dc380cd8e822.png" alt="\epsilon"/>
+respectively.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">leapfrog</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inside loop of Scan. Performs one step of leapfrog update, using</span>
+<span class="sd">    Hamiltonian dynamics.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pos: theano matrix</span>
+<span class="sd">        in leapfrog update equations, represents pos(t), position at time t</span>
+<span class="sd">    vel: theano matrix</span>
+<span class="sd">        in leapfrog update equations, represents vel(t - stepsize/2),</span>
+<span class="sd">        velocity at time (t - stepsize/2)</span>
+<span class="sd">    step: theano scalar</span>
+<span class="sd">        scalar value controlling amount by which to move</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    rval1: [theano matrix, theano matrix]</span>
+<span class="sd">        Symbolic theano matrices for new position pos(t + stepsize), and</span>
+<span class="sd">        velocity vel(t + stepsize/2)</span>
+<span class="sd">    rval2: dictionary</span>
+<span class="sd">        Dictionary of updates for the Scan Op</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># from pos(t) and vel(t-eps/2), compute vel(t+eps/2)</span>
+    <span class="n">dE_dpos</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">energy_fn</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">pos</span><span class="p">)</span>
+    <span class="n">new_vel</span> <span class="o">=</span> <span class="n">vel</span> <span class="o">-</span> <span class="n">step</span> <span class="o">*</span> <span class="n">dE_dpos</span>
+    <span class="c"># from vel(t+eps/2) compute pos(t+eps)</span>
+    <span class="n">new_pos</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="n">new_vel</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">new_pos</span><span class="p">,</span> <span class="n">new_vel</span><span class="p">],{}</span>
+</pre></div>
+</div>
+<p>The <img class="math" src="_images/math/19b79b37b8d5fe33907bfe8c5d17dfce18aa386b.png" alt="simulate_dynamics"/> function performs the full algorithm of Eqs.
+<a href="#equation-leap-frog2">(3)</a>. We start with the initial half-step update of <img class="math" src="_images/math/2c175f60eecef1de7560c3bdea495d69f26f719d.png" alt="\phi"/>
+and full-step of <img class="math" src="_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s"/>, and then scan over the <img class="math" src="_images/math/6b53f571e9af9d878266209b3527269c8f0388ea.png" alt="leapfrog"/> method
+<img class="math" src="_images/math/5f1dfce4f10c243ddcefa79d8a6f10bf88d64b8c.png" alt="n\_steps-1"/> times.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">simulate_dynamics</span><span class="p">(</span><span class="n">initial_pos</span><span class="p">,</span> <span class="n">initial_vel</span><span class="p">,</span> <span class="n">stepsize</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">energy_fn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return final (position, velocity) obtained after an `n_steps` leapfrog</span>
+<span class="sd">    updates, using Hamiltonian dynamics.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    initial_pos: shared theano matrix</span>
+<span class="sd">        Initial position at which to start the simulation</span>
+<span class="sd">    initial_vel: shared theano matrix</span>
+<span class="sd">        Initial velocity of particles</span>
+<span class="sd">    stepsize: shared theano scalar</span>
+<span class="sd">        Scalar value controlling amount by which to move</span>
+<span class="sd">    energy_fn: python function</span>
+<span class="sd">        Python function, operating on symbolic theano variables, used to compute</span>
+<span class="sd">        the potential energy at a given position.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    rval1: theano matrix</span>
+<span class="sd">        Final positions obtained after simulation</span>
+<span class="sd">    rval2: theano matrix</span>
+<span class="sd">        Final velocity obtained after simulation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">leapfrog</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; ... &quot;&quot;&quot;</span>
+
+    <span class="c"># compute velocity at time-step: t + stepsize/2</span>
+    <span class="n">initial_energy</span> <span class="o">=</span> <span class="n">energy_fn</span><span class="p">(</span><span class="n">initial_pos</span><span class="p">)</span>
+    <span class="n">dE_dpos</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">initial_energy</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">initial_pos</span><span class="p">)</span>
+    <span class="n">vel_half_step</span> <span class="o">=</span> <span class="n">initial_vel</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">stepsize</span><span class="o">*</span><span class="n">dE_dpos</span>
+
+    <span class="c"># compute position at time-step: t + stepsize</span>
+    <span class="n">pos_full_step</span> <span class="o">=</span> <span class="n">initial_pos</span> <span class="o">+</span> <span class="n">stepsize</span> <span class="o">*</span> <span class="n">vel_half_step</span>
+
+    <span class="c"># perform leapfrog updates: the scan op is used to repeatedly compute</span>
+    <span class="c"># vel(t + (m-1/2)*stepsize) and pos(t + m*stepsize) for m in [2,n_steps].</span>
+    <span class="p">(</span><span class="n">final_pos</span><span class="p">,</span> <span class="n">final_vel</span><span class="p">),</span> <span class="n">scan_updates</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">leapfrog</span><span class="p">,</span>
+            <span class="n">outputs_info</span><span class="o">=</span><span class="p">[</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="n">pos_full_step</span><span class="p">,</span> <span class="n">return_steps</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="n">vel_half_step</span><span class="p">,</span> <span class="n">return_steps</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="p">],</span>
+            <span class="n">non_sequences</span><span class="o">=</span><span class="p">[</span><span class="n">stepsize</span><span class="p">],</span>
+            <span class="n">n_steps</span><span class="o">=</span><span class="n">n_steps</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># NOTE: Scan always returns an updates dictionary, in case the scanned function draws</span>
+    <span class="c"># samples from a RandomStream. These updates must then be used when compiling the Theano</span>
+    <span class="c"># function, to avoid drawing the same random numbers each time the function is called. In</span>
+    <span class="c"># this case however, we consciously ignore &quot;scan_updates&quot; because we know it is empty.</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">scan_updates</span>
+
+    <span class="c"># The last velocity returned by scan is vel(t + (n_steps-1/2)*stepsize)</span>
+    <span class="c"># We therefore perform one more half-step to return vel(t + n_steps*stepsize)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">energy_fn</span><span class="p">(</span><span class="n">final_pos</span><span class="p">)</span>
+    <span class="n">final_vel</span> <span class="o">=</span> <span class="n">final_vel</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">stepsize</span> <span class="o">*</span> <span class="n">TT</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">final_pos</span><span class="p">)</span>
+
+    <span class="c"># return new proposal state</span>
+    <span class="k">return</span> <span class="n">final_pos</span><span class="p">,</span> <span class="n">final_vel</span>
+</pre></div>
+</div>
+<p>A final half-step is performed to compute <img class="math" src="_images/math/90c125256809a9b8455142480505f8f94cbc5245.png" alt="\phi(t+n\epsilon)"/>, and the
+final proposed state <img class="math" src="_images/math/ce1d21c2da6568242f57395edbe4df1ac31e6a6d.png" alt="\chi'"/> is returned.</p>
+<p><strong>hmc_move</strong></p>
+<p>The <img class="math" src="_images/math/2e0255d0eb35a6173b138e43ef493557b6e1bac5.png" alt="hmc\_move"/> function implements the remaining steps (steps 1 and 3) of an
+HMC move proposal (while wrapping the <img class="math" src="_images/math/ca9af7561a6457a4b6da0828e58b006922032e27.png" alt="simulate\_dynamics"/> function). Given a
+matrix of initial states <img class="math" src="_images/math/94e06fcd87483af01f22b13c2894bc37840d9f0c.png" alt="s \in \mathcal{R}^{N \times D}"/> (<img class="math" src="_images/math/0fec2375394a6e739a246d2e455f62ed8afda848.png" alt="positions"/>) and
+energy function <img class="math" src="_images/math/a1b0b60d25dc2d168b10962a54d149adb7c66f6e.png" alt="E(s)"/> (<img class="math" src="_images/math/0b92d4b386ed0e8f6b72d50eb2bd52f0a851205a.png" alt="energy\_fn"/>), it defines the symbolic graph for
+computing <img class="math" src="_images/math/b655d73d8aa9531b32473864bee273899cd298fa.png" alt="n\_steps"/> of HMC, using a given <img class="math" src="_images/math/9ae655f8904cdfdc6be2ee1cff6fdd57fc3739e0.png" alt="stepsize"/>. The function prototype
+is as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">hmc_move</span><span class="p">(</span><span class="n">s_rng</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">energy_fn</span><span class="p">,</span> <span class="n">stepsize</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function performs one-step of Hybrid Monte-Carlo sampling. We start by</span>
+<span class="sd">    sampling a random velocity from a univariate Gaussian distribution, perform</span>
+<span class="sd">    `n_steps` leap-frog updates using Hamiltonian dynamics and accept-reject</span>
+<span class="sd">    using Metropolis-Hastings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    s_rng: theano shared random stream</span>
+<span class="sd">        Symbolic random number generator used to draw random velocity and</span>
+<span class="sd">        perform accept-reject move.</span>
+<span class="sd">    positions: shared theano matrix</span>
+<span class="sd">        Symbolic matrix whose rows are position vectors.</span>
+<span class="sd">    energy_fn: python function</span>
+<span class="sd">        Python function, operating on symbolic theano variables, used to compute</span>
+<span class="sd">        the potential energy at a given position.</span>
+<span class="sd">    stepsize:  shared theano scalar</span>
+<span class="sd">        Shared variable containing the stepsize to use for `n_steps` of HMC</span>
+<span class="sd">        simulation steps.</span>
+<span class="sd">    n_steps: integer</span>
+<span class="sd">        Number of HMC steps to perform before proposing a new position.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    rval1: boolean</span>
+<span class="sd">        True if move is accepted, False otherwise</span>
+<span class="sd">    rval2: theano matrix</span>
+<span class="sd">        Matrix whose rows contain the proposed &quot;new position&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>We start by sampling random velocities, using the provided shared RandomStream
+object. Velocities are sampled independently for each dimension and for each
+particle under simulation, yielding a <img class="math" src="_images/math/c0d6a96e59ea957d0ef4003cf2a3a16ffc3b649e.png" alt="N \times D"/> matrix.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># sample random velocity for `batchsize` particles</span>
+<span class="n">initial_vel</span> <span class="o">=</span> <span class="n">s_rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since we now have an initial position and velocity, we can now call the
+<img class="math" src="_images/math/ca9af7561a6457a4b6da0828e58b006922032e27.png" alt="simulate\_dynamics"/> to obtain the proposal for the new state <img class="math" src="_images/math/ce1d21c2da6568242f57395edbe4df1ac31e6a6d.png" alt="\chi'"/>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># perform simulation of particles subject to Hamiltonian dynamics</span>
+<span class="n">final_pos</span><span class="p">,</span> <span class="n">final_vel</span> <span class="o">=</span> <span class="n">simulate_dynamics</span><span class="p">(</span>
+        <span class="n">initial_pos</span> <span class="o">=</span> <span class="n">positions</span><span class="p">,</span>
+        <span class="n">initial_vel</span> <span class="o">=</span> <span class="n">initial_vel</span><span class="p">,</span>
+        <span class="n">stepsize</span> <span class="o">=</span> <span class="n">stepsize</span><span class="p">,</span>
+        <span class="n">n_steps</span> <span class="o">=</span> <span class="n">n_steps</span><span class="p">,</span>
+        <span class="n">energy_fn</span> <span class="o">=</span> <span class="n">energy_fn</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We then accept/reject the proposed state based on the Metropolis algorithm.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># accept/reject the proposed move based on the joint distribution</span>
+<span class="n">accept</span> <span class="o">=</span> <span class="n">metropolis_hastings_accept</span><span class="p">(</span>
+        <span class="n">energy_prev</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">initial_vel</span><span class="p">,</span> <span class="n">energy_fn</span><span class="p">),</span>
+        <span class="n">energy_next</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="p">(</span><span class="n">final_pos</span><span class="p">,</span> <span class="n">final_vel</span><span class="p">,</span> <span class="n">energy_fn</span><span class="p">),</span>
+        <span class="n">s_rng</span><span class="o">=</span><span class="n">s_rng</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <img class="math" src="_images/math/af1d74943a116d6479f826618680c10fad24071c.png" alt="metropolis\_hastings\_accept"/> and <img class="math" src="_images/math/914b80b893b970ffea6b4c41bd51d933b79158b5.png" alt="hamiltonian"/> are helper functions,
+defined as follows.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">metropolis_hastings_accept</span><span class="p">(</span><span class="n">energy_prev</span><span class="p">,</span> <span class="n">energy_next</span><span class="p">,</span> <span class="n">s_rng</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs a Metropolis-Hastings accept-reject move.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    energy_prev: theano vector</span>
+<span class="sd">        Symbolic theano tensor which contains the energy associated with the</span>
+<span class="sd">        configuration at time-step t.</span>
+<span class="sd">    energy_next: theano vector</span>
+<span class="sd">        Symbolic theano tensor which contains the energy associated with the</span>
+<span class="sd">        proposed configuration at time-step t+1.</span>
+<span class="sd">    s_rng: theano.tensor.shared_randomstreams.RandomStreams</span>
+<span class="sd">        Theano shared random stream object used to generate the random number</span>
+<span class="sd">        used in proposal.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    return: boolean</span>
+<span class="sd">        True if move is accepted, False otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ediff</span> <span class="o">=</span> <span class="n">energy_prev</span> <span class="o">-</span> <span class="n">energy_next</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">TT</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ediff</span><span class="p">)</span> <span class="o">-</span> <span class="n">s_rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">energy_prev</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+
+<span class="k">def</span> <span class="nf">hamiltonian</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">energy_fn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; ... &quot;&quot;&quot;</span>
+    <span class="c"># assuming mass is 1</span>
+    <span class="k">return</span> <span class="n">energy_fn</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span> <span class="o">+</span> <span class="n">kinetic_energy</span><span class="p">(</span><span class="n">vel</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">kinetic_energy</span><span class="p">(</span><span class="n">vel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; ... &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">vel</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><img class="math" src="_images/math/2e0255d0eb35a6173b138e43ef493557b6e1bac5.png" alt="hmc\_move"/> finally returns the tuple <img class="math" src="_images/math/b262bf79b13566469523e8d625f9fcdcd47154cf.png" alt="(accept, final\_pos)"/>. <img class="math" src="_images/math/518c5acdb1fd3ea7cd02ade6f3adea7af0b397e1.png" alt="accept"/> is a
+symbolic boolean variable indicating whether or not the new state <img class="math" src="_images/math/34c8769fbb89a72a6a858aa0be4ac41792d158d4.png" alt="final_pos"/>
+should be used or not.</p>
+<p><strong>hmc_updates</strong></p>
+<p>The purpose of <img class="math" src="_images/math/931248c6b5692e9e17bce56b46af2588c7b59137.png" alt="hmc\_updates"/> is to generate the dictionary of updates to
+perform, whenever our HMC sampling function is called. <img class="math" src="_images/math/931248c6b5692e9e17bce56b46af2588c7b59137.png" alt="hmc\_updates"/> thus
+receives as parameters, a series of shared variables to update (<img class="math" src="_images/math/0fec2375394a6e739a246d2e455f62ed8afda848.png" alt="positions"/>, <img class="math" src="_images/math/9ae655f8904cdfdc6be2ee1cff6fdd57fc3739e0.png" alt="stepsize"/> and
+<img class="math" src="_images/math/0df2125e2a3022ef5db9661ffef3958079a2a61b.png" alt="avg\_acceptance\_rate"/>), and the parameters required to compute their new
+state.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">hmc_updates</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">stepsize</span><span class="p">,</span> <span class="n">avg_acceptance_rate</span><span class="p">,</span> <span class="n">final_pos</span><span class="p">,</span> <span class="n">accept</span><span class="p">,</span>
+                 <span class="n">target_acceptance_rate</span><span class="p">,</span> <span class="n">stepsize_inc</span><span class="p">,</span> <span class="n">stepsize_dec</span><span class="p">,</span>
+                 <span class="n">stepsize_min</span><span class="p">,</span> <span class="n">stepsize_max</span><span class="p">,</span> <span class="n">avg_acceptance_slowness</span><span class="p">):</span>
+
+    <span class="c">## POSITION UPDATES ##</span>
+    <span class="c"># broadcast `accept` scalar to tensor with the same dimensions as final_pos.</span>
+    <span class="n">accept_matrix</span> <span class="o">=</span> <span class="n">accept</span><span class="o">.</span><span class="n">dimshuffle</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">*</span><span class="p">((</span><span class="s">&#39;x&#39;</span><span class="p">,)</span><span class="o">*</span><span class="p">(</span><span class="n">final_pos</span><span class="o">.</span><span class="n">ndim</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="c"># if accept is True, update to `final_pos` else stay put</span>
+    <span class="n">new_positions</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="n">accept_matrix</span><span class="p">,</span> <span class="n">final_pos</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Using the above code, the dictionary <img class="math" src="_images/math/674e013b5a2e6fb63c79105d9a9d6ff73c6915a8.png" alt="{positions: new\_positions}"/> can be used
+to update the state of the sampler with either (1) the new state <img class="math" src="_images/math/c11c2b5386fe04fbfb6e9fb7200e483dae5bd087.png" alt="final\_pos"/>
+if <img class="math" src="_images/math/518c5acdb1fd3ea7cd02ade6f3adea7af0b397e1.png" alt="accept"/> is True, or (2) the old state if <img class="math" src="_images/math/518c5acdb1fd3ea7cd02ade6f3adea7af0b397e1.png" alt="accept"/> is False.  This
+conditional assignment is performed by the <a class="reference external" href="http://deeplearning.net/software/theano/library/tensor/basic.html#tensor.switch">switch</a> op.</p>
+<p><img class="math" src="_images/math/91f140957036f1141f805760b4b233e75f7191fe.png" alt="switch"/> expects as its first argument, a boolean mask with the same
+broadcastable dimensions as the second and third argument. Since <img class="math" src="_images/math/518c5acdb1fd3ea7cd02ade6f3adea7af0b397e1.png" alt="accept"/> is
+scalar-valued, we must first use <a class="reference external" href="http://deeplearning.net/software/theano/library/tensor/basic.html#tensor._tensor_py_operators.dimshuffle">dimshuffle</a> to transform it to a tensor with
+<img class="math" src="_images/math/d6486f3b21179c266de622007e86d45db641eb04.png" alt="final\_pos.ndim"/> broadcastable dimensions (<img class="math" src="_images/math/f531bf29466961d529d7925324f5d3e0302c4c42.png" alt="accept\_matrix"/>).</p>
+<p><img class="math" src="_images/math/931248c6b5692e9e17bce56b46af2588c7b59137.png" alt="hmc\_updates"/> additionally implements an adaptive version of HMC, as
+implemented in the accompanying code to <a class="reference external" href="references.html#ranzato10">[Ranzato10]</a>. We start by tracking the
+average acceptance rate of the HMC move proposals (across many simulations),
+using an exponential moving average with time constant
+<img class="math" src="_images/math/572e189b879a9f928161a98a6a70c2f4851c57a5.png" alt="1-avg\_acceptance\_slowness"/>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">## ACCEPT RATE UPDATES ##</span>
+<span class="c"># perform exponential moving average</span>
+<span class="n">new_acceptance_rate</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+        <span class="n">avg_acceptance_slowness</span> <span class="o">*</span> <span class="n">avg_acceptance_rate</span><span class="p">,</span>
+        <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">avg_acceptance_slowness</span><span class="p">)</span> <span class="o">*</span> <span class="n">accept</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>If the average acceptance rate is larger than the <img class="math" src="_images/math/5a0a46c96f95c1e3078f7b9f28609e9151074329.png" alt="target\_acceptance\_rate"/>, we
+increase the <img class="math" src="_images/math/9ae655f8904cdfdc6be2ee1cff6fdd57fc3739e0.png" alt="stepsize"/> by a factor of <img class="math" src="_images/math/1bc35caa1d16d79ff16c890b6d562ee92dfd24e9.png" alt="stepsize\_inc"/> in order to increase the
+mixing rate of our chain. If the average acceptance rate is too low however,
+<img class="math" src="_images/math/9ae655f8904cdfdc6be2ee1cff6fdd57fc3739e0.png" alt="stepsize"/> is decreased by a factor of <img class="math" src="_images/math/48cfbfcaa6cf5f10ad536fdc19f70caa92187191.png" alt="stepsize\_dec"/>, yielding a more
+conservative mixing rate. The <a class="reference external" href="http://deeplearning.net/software/theano/library/tensor/basic.html#tensor.clip">clip</a> op allows us to maintain the <img class="math" src="_images/math/9ae655f8904cdfdc6be2ee1cff6fdd57fc3739e0.png" alt="stepsize"/>
+in the range [<img class="math" src="_images/math/36c36817324044caf562061a18cc3602adaee19b.png" alt="stepsize\_min"/>, <img class="math" src="_images/math/75a09f5a1851d48143f527902838f68fef896f18.png" alt="stepsize\_max"/>].</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">## STEPSIZE UPDATES ##</span>
+<span class="c"># if acceptance rate is too low, our sampler is too &quot;noisy&quot; and we reduce</span>
+<span class="c"># the stepsize. If it is too high, our sampler is too conservative, we can</span>
+<span class="c"># get away with a larger stepsize (resulting in better mixing).</span>
+<span class="n">_new_stepsize</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="n">avg_acceptance_rate</span> <span class="o">&gt;</span> <span class="n">target_acceptance_rate</span><span class="p">,</span>
+                          <span class="n">stepsize</span> <span class="o">*</span> <span class="n">stepsize_inc</span><span class="p">,</span> <span class="n">stepsize</span> <span class="o">*</span> <span class="n">stepsize_dec</span><span class="p">)</span>
+<span class="c"># maintain stepsize in [stepsize_min, stepsize_max]</span>
+<span class="n">new_stepsize</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">_new_stepsize</span><span class="p">,</span> <span class="n">stepsize_min</span><span class="p">,</span> <span class="n">stepsize_max</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The final updates dictionary is then returned:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">return</span> <span class="p">[(</span><span class="n">positions</span><span class="p">,</span> <span class="n">new_positions</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">stepsize</span><span class="p">,</span> <span class="n">new_stepsize</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">avg_acceptance_rate</span><span class="p">,</span> <span class="n">new_acceptance_rate</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p><strong>HMC_sampler</strong></p>
+<p>We finally tie everything together using the <img class="math" src="_images/math/b1cb46f29407a05abe1df85d6cd7554d56ca23d7.png" alt="HMC\_Sampler"/> class. Its main
+elements are:</p>
+<ul class="simple">
+<li><img class="math" src="_images/math/885d48b20ae3e4a9b542e1b3724b786eb4b33510.png" alt="new\_from\_shared\_positions"/>: a constructor method which allocates various
+shared variables and strings together the calls to <img class="math" src="_images/math/2e0255d0eb35a6173b138e43ef493557b6e1bac5.png" alt="hmc\_move"/> and
+<img class="math" src="_images/math/931248c6b5692e9e17bce56b46af2588c7b59137.png" alt="hmc\_updates"/>. It also builds the theano function <img class="math" src="_images/math/1697e62e81bd1946b3edd9f90a6cbd84b64b79ad.png" alt="simulate"/>, whose sole
+purpose is to execute the updates generated by <img class="math" src="_images/math/931248c6b5692e9e17bce56b46af2588c7b59137.png" alt="hmc\_updates"/>.</li>
+<li><img class="math" src="_images/math/0ee49b04a328e4fd079d3c96c2df78cd6aa8c72a.png" alt="draw"/>: a convenience method which calls the Theano function <img class="math" src="_images/math/1697e62e81bd1946b3edd9f90a6cbd84b64b79ad.png" alt="simulate"/>
+and returns a copy of the contents of the shared variable <img class="math" src="_images/math/8843ea3806093e5de85761921c43e444fe822497.png" alt="self.positions"/>.</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">HMC_sampler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience wrapper for performing Hybrid Monte Carlo (HMC). It creates the</span>
+<span class="sd">    symbolic graph for performing an HMC simulation (using `hmc_move` and</span>
+<span class="sd">    `hmc_updates`). The graph is then compiled into the `simulate` function, a</span>
+<span class="sd">    theano function which runs the simulation and updates the required shared</span>
+<span class="sd">    variables.</span>
+
+<span class="sd">    Users should interface with the sampler thorugh the `draw` function which</span>
+<span class="sd">    advances the markov chain and returns the current sample by calling</span>
+<span class="sd">    `simulate` and `get_position` in sequence.</span>
+
+<span class="sd">    The hyper-parameters are the same as those used by Marc&#39;Aurelio&#39;s</span>
+<span class="sd">    &#39;train_mcRBM.py&#39; file (available on his personal home page).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">new_from_shared_positions</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">shared_positions</span><span class="p">,</span> <span class="n">energy_fn</span><span class="p">,</span>
+            <span class="n">initial_stepsize</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">target_acceptance_rate</span><span class="o">=.</span><span class="mi">9</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+            <span class="n">stepsize_dec</span> <span class="o">=</span> <span class="mf">0.98</span><span class="p">,</span>
+            <span class="n">stepsize_min</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+            <span class="n">stepsize_max</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+            <span class="n">stepsize_inc</span> <span class="o">=</span> <span class="mf">1.02</span><span class="p">,</span>
+            <span class="n">avg_acceptance_slowness</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span> <span class="c"># used in geometric avg. 1.0 would be not moving at all</span>
+            <span class="n">seed</span><span class="o">=</span><span class="mi">12345</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param shared_positions: theano ndarray shared var with many particle [initial] positions</span>
+<span class="sd">        :param energy_fn:</span>
+<span class="sd">            callable such that energy_fn(positions)</span>
+<span class="sd">            returns theano vector of energies.</span>
+<span class="sd">            The len of this vector is the batchsize.</span>
+
+<span class="sd">            The sum of this energy vector must be differentiable (with theano.tensor.grad) with</span>
+<span class="sd">            respect to the positions for HMC sampling to work.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batchsize</span> <span class="o">=</span> <span class="n">shared_positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c"># allocate shared variables</span>
+        <span class="n">stepsize</span> <span class="o">=</span> <span class="n">sharedX</span><span class="p">(</span><span class="n">initial_stepsize</span><span class="p">,</span> <span class="s">&#39;hmc_stepsize&#39;</span><span class="p">)</span>
+        <span class="n">avg_acceptance_rate</span> <span class="o">=</span> <span class="n">sharedX</span><span class="p">(</span><span class="n">target_acceptance_rate</span><span class="p">,</span> <span class="s">&#39;avg_acceptance_rate&#39;</span><span class="p">)</span>
+        <span class="n">s_rng</span> <span class="o">=</span> <span class="n">TT</span><span class="o">.</span><span class="n">shared_randomstreams</span><span class="o">.</span><span class="n">RandomStreams</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="c"># define graph for an `n_steps` HMC simulation</span>
+        <span class="n">accept</span><span class="p">,</span> <span class="n">final_pos</span> <span class="o">=</span> <span class="n">hmc_move</span><span class="p">(</span>
+                <span class="n">s_rng</span><span class="p">,</span>
+                <span class="n">shared_positions</span><span class="p">,</span>
+                <span class="n">energy_fn</span><span class="p">,</span>
+                <span class="n">stepsize</span><span class="p">,</span>
+                <span class="n">n_steps</span><span class="p">)</span>
+
+        <span class="c"># define the dictionary of updates, to apply on every `simulate` call</span>
+        <span class="n">simulate_updates</span> <span class="o">=</span> <span class="n">hmc_updates</span><span class="p">(</span>
+                <span class="n">shared_positions</span><span class="p">,</span>
+                <span class="n">stepsize</span><span class="p">,</span>
+                <span class="n">avg_acceptance_rate</span><span class="p">,</span>
+                <span class="n">final_pos</span><span class="o">=</span><span class="n">final_pos</span><span class="p">,</span>
+                <span class="n">accept</span><span class="o">=</span><span class="n">accept</span><span class="p">,</span>
+                <span class="n">stepsize_min</span><span class="o">=</span><span class="n">stepsize_min</span><span class="p">,</span>
+                <span class="n">stepsize_max</span><span class="o">=</span><span class="n">stepsize_max</span><span class="p">,</span>
+                <span class="n">stepsize_inc</span><span class="o">=</span><span class="n">stepsize_inc</span><span class="p">,</span>
+                <span class="n">stepsize_dec</span><span class="o">=</span><span class="n">stepsize_dec</span><span class="p">,</span>
+                <span class="n">target_acceptance_rate</span><span class="o">=</span><span class="n">target_acceptance_rate</span><span class="p">,</span>
+                <span class="n">avg_acceptance_slowness</span><span class="o">=</span><span class="n">avg_acceptance_slowness</span><span class="p">)</span>
+
+        <span class="c"># compile theano function</span>
+        <span class="n">simulate</span> <span class="o">=</span> <span class="n">function</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">updates</span><span class="o">=</span><span class="n">simulate_updates</span><span class="p">)</span>
+
+        <span class="c"># create HMC_sampler object with the following attributes ...</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span>
+                <span class="n">positions</span><span class="o">=</span><span class="n">shared_positions</span><span class="p">,</span>
+                <span class="n">stepsize</span><span class="o">=</span><span class="n">stepsize</span><span class="p">,</span>
+                <span class="n">stepsize_min</span><span class="o">=</span><span class="n">stepsize_min</span><span class="p">,</span>
+                <span class="n">stepsize_max</span><span class="o">=</span><span class="n">stepsize_max</span><span class="p">,</span>
+                <span class="n">avg_acceptance_rate</span><span class="o">=</span><span class="n">avg_acceptance_rate</span><span class="p">,</span>
+                <span class="n">target_acceptance_rate</span><span class="o">=</span><span class="n">target_acceptance_rate</span><span class="p">,</span>
+                <span class="n">s_rng</span><span class="o">=</span><span class="n">s_rng</span><span class="p">,</span>
+                <span class="n">_updates</span><span class="o">=</span><span class="n">simulate_updates</span><span class="p">,</span>
+                <span class="n">simulate</span><span class="o">=</span><span class="n">simulate</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a new position obtained after `n_steps` of HMC simulation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        kwargs: dictionary</span>
+<span class="sd">            The `kwargs` dictionary is passed to the shared variable</span>
+<span class="sd">            (self.positions) `get_value()` function.  For example, to avoid</span>
+<span class="sd">            copying the shared variable value, consider passing `borrow=True`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        rval: numpy matrix</span>
+<span class="sd">            Numpy matrix whose of dimensions similar to `initial_position`.</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="testing-our-sampler">
+<h2>Testing our Sampler<a class="headerlink" href="#testing-our-sampler" title="Permalink to this headline">¶</a></h2>
+<p>We test our implementation of HMC by sampling from a multi-variate Gaussian
+distribution. We start by generating a random mean vector <img class="math" src="_images/math/6690e784718c1361117cfcd64ea7dbb49095d0d8.png" alt="mu"/> and covariance
+matrix <img class="math" src="_images/math/cbeb68108987289cf8c98077834b8ccaa83fb900.png" alt="cov"/>, which allows us to define the energy function of the
+corresponding Gaussian distribution: <img class="math" src="_images/math/b66b70d88c9941ec0fbaf97b4aead4fb03d5eea3.png" alt="gaussian\_energy"/>.
+We then initialize the state of the sampler by allocating a <img class="math" src="_images/math/64e1ad9f772b3b6eda1c6b9b2736b8f6723b09bc.png" alt="position"/> shared
+variable. It is passed to the constructor of <img class="math" src="_images/math/88be357e653569445182099bc21eb58062819651.png" alt="HMC\_sampler"/> along with our
+target energy function.</p>
+<p>Following a burn-in period, we then generate a large number of samples and
+compare the empirical mean and covariance matrix to their true values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">sampler_on_nd_gaussian</span><span class="p">(</span><span class="n">sampler_cls</span><span class="p">,</span> <span class="n">burnin</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">batchsize</span><span class="o">=</span><span class="mi">3</span>
+
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+
+    <span class="c"># Define a covariance and mu for a gaussian</span>
+    <span class="n">mu</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+    <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+    <span class="n">cov</span> <span class="o">=</span> <span class="p">(</span><span class="n">cov</span> <span class="o">+</span> <span class="n">cov</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="n">cov</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">cov_inv</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+
+    <span class="c"># Define energy function for a multi-variate Gaussian</span>
+    <span class="k">def</span> <span class="nf">gaussian_energy</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">TT</span><span class="o">.</span><span class="n">dot</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">mu</span><span class="p">),</span><span class="n">cov_inv</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">mu</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># Declared shared random variable for positions</span>
+    <span class="n">position</span> <span class="o">=</span> <span class="n">shared</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batchsize</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+
+    <span class="c"># Create HMC sampler</span>
+    <span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_cls</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">gaussian_energy</span><span class="p">,</span>
+            <span class="n">initial_stepsize</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">stepsize_max</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="c"># Start with a burn-in process</span>
+    <span class="n">garbage</span> <span class="o">=</span> <span class="p">[</span><span class="n">sampler</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">burnin</span><span class="p">)]</span> <span class="c">#burn-in</span>
+    <span class="c"># Draw `n_samples`: result is a 3D tensor of dim [n_samples, batchsize, dim]</span>
+    <span class="n">_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">sampler</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)])</span>
+    <span class="c"># Flatten to [n_samples * batchsize, dim]</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">_samples</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">print</span> <span class="s">&#39;****** TARGET VALUES ******&#39;</span>
+    <span class="k">print</span> <span class="s">&#39;target mean:&#39;</span><span class="p">,</span> <span class="n">mu</span>
+    <span class="k">print</span> <span class="s">&#39;target cov:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">cov</span>
+
+    <span class="k">print</span> <span class="s">&#39;****** EMPIRICAL MEAN/COV USING HMC ******&#39;</span>
+    <span class="k">print</span> <span class="s">&#39;empirical mean: &#39;</span><span class="p">,</span> <span class="n">samples</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;empirical_cov:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&#39;****** HMC INTERNALS ******&#39;</span>
+    <span class="k">print</span> <span class="s">&#39;final stepsize&#39;</span><span class="p">,</span> <span class="n">sampler</span><span class="o">.</span><span class="n">stepsize</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&#39;final acceptance_rate&#39;</span><span class="p">,</span> <span class="n">sampler</span><span class="o">.</span><span class="n">avg_acceptance_rate</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">sampler</span>
+
+<span class="k">def</span> <span class="nf">test_hmc</span><span class="p">():</span>
+    <span class="n">sampler</span> <span class="o">=</span> <span class="n">sampler_on_nd_gaussian</span><span class="p">(</span><span class="n">HMC_sampler</span><span class="o">.</span><span class="n">new_from_shared_positions</span><span class="p">,</span>
+            <span class="n">burnin</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sampler</span><span class="o">.</span><span class="n">avg_acceptance_rate</span> <span class="o">-</span> <span class="n">sampler</span><span class="o">.</span><span class="n">target_acceptance_rate</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">sampler</span><span class="o">.</span><span class="n">stepsize</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">stepsize_min</span>
+    <span class="k">assert</span> <span class="n">sampler</span><span class="o">.</span><span class="n">stepsize</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">stepsize_max</span>
+</pre></div>
+</div>
+<p>The above code can be run using the command: &#8220;nosetests -s code/mcrbm/test_hmc.py&#8221;. The output is as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="o">[</span>desjagui@atchoum mcrbm<span class="o">]</span><span class="nv">$ </span>python test_hmc.py
+
+****** TARGET VALUES ******
+target mean: <span class="o">[</span> 6.96469186  2.86139335  2.26851454  5.51314769  7.1946897 <span class="o">]</span>
+target cov:
+<span class="o">[[</span> 1.          0.66197111  0.71141257  0.55766643  0.35753822<span class="o">]</span>
+ <span class="o">[</span> 0.66197111  1.          0.31053199  0.45455485  0.37991646<span class="o">]</span>
+ <span class="o">[</span> 0.71141257  0.31053199  1.          0.62800335  0.38004541<span class="o">]</span>
+ <span class="o">[</span> 0.55766643  0.45455485  0.62800335  1.          0.50807871<span class="o">]</span>
+ <span class="o">[</span> 0.35753822  0.37991646  0.38004541  0.50807871  1.        <span class="o">]]</span>
+
+****** EMPIRICAL MEAN/COV USING HMC ******
+empirical mean:  <span class="o">[</span> 6.94155164  2.81526039  2.26301715  5.46536853  7.19414496<span class="o">]</span>
+empirical_cov:
+<span class="o">[[</span> 1.05152997  0.68393537  0.76038645  0.59930252  0.37478746<span class="o">]</span>
+ <span class="o">[</span> 0.68393537  0.97708159  0.37351422  0.48362404  0.3839558 <span class="o">]</span>
+ <span class="o">[</span> 0.76038645  0.37351422  1.03797111  0.67342957  0.41529132<span class="o">]</span>
+ <span class="o">[</span> 0.59930252  0.48362404  0.67342957  1.02865056  0.53613649<span class="o">]</span>
+ <span class="o">[</span> 0.37478746  0.3839558   0.41529132  0.53613649  0.98721449<span class="o">]]</span>
+
+****** HMC INTERNALS ******
+final stepsize 0.460446628091
+final acceptance_rate 0.922502043428
+</pre></div>
+</div>
+<p>As can be seen above, the samples generated by our HMC sampler yield an
+empirical mean and covariance matrix, which are very close to the true
+underlying parameters. The adaptive algorithm also seemed to work well as the
+final acceptance rate is close to our target of <img class="math" src="_images/math/27495cbe2044b503d98fb795bb2e0adc0a197062.png" alt="0.9"/>.</p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<table class="docutils citation" frame="void" id="alder59" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Alder59]</td><td>Alder, B. J. and Wainwright, T. E. (1959) &#8220;Studies in molecular dynamics. 1. General method&#8221;, Journal of Chemical Physics, vol. 31, pp. 459-466.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="andersen80" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Andersen80]</td><td>Andersen, H.C. (1980) &#8220;Molecular dynamics simulations at constant pressure and/or temperature&#8221;, Journal of Chemical Physics, vol. 72, pp. 2384-2393.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="duane87" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Duane87]</a></td><td>Duane, S., Kennedy, A. D., Pendleton, B. J., and Roweth, D. (1987) &#8220;Hybrid Monte Carlo&#8221;, Physics Letters, vol. 195, pp. 216-222.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="neal93" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Neal93]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id3">2</a>)</em> Neal, R. M. (1993) &#8220;Probabilistic Inference Using Markov Chain Monte Carlo Methods&#8221;, Technical Report CRG-TR-93-1, Dept. of Computer Science, University of Toronto, 144 pages</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

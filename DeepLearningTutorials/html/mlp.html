@@ -1,0 +1,859 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Multilayer Perceptron &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Convolutional Neural Networks (LeNet)" href="lenet.html" />
+    <link rel="prev" title="Classifying MNIST digits using Logistic Regression" href="logreg.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="lenet.html" title="Convolutional Neural Networks (LeNet)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="logreg.html" title="Classifying MNIST digits using Logistic Regression"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Multilayer Perceptron</a><ul>
+<li><a class="reference external" href="#the-model">The Model</a></li>
+<li><a class="reference external" href="#going-from-logistic-regression-to-mlp">Going from logistic regression to MLP</a></li>
+<li><a class="reference external" href="#putting-it-all-together">Putting it All Together</a></li>
+<li><a class="reference external" href="#tips-and-tricks-for-training-mlps">Tips and Tricks for training MLPs</a><ul>
+<li><a class="reference external" href="#nonlinearity">Nonlinearity</a></li>
+<li><a class="reference external" href="#weight-initialization">Weight initialization</a></li>
+<li><a class="reference external" href="#learning-rate">Learning rate</a></li>
+<li><a class="reference external" href="#number-of-hidden-units">Number of hidden units</a></li>
+<li><a class="reference external" href="#regularization-parameter">Regularization parameter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="logreg.html"
+                                  title="previous chapter">Classifying MNIST digits using Logistic Regression</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="lenet.html"
+                                  title="next chapter">Convolutional Neural Networks (LeNet)</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/mlp.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="multilayer-perceptron">
+<span id="mlp"></span><span id="index-16"></span><h1>Multilayer Perceptron<a class="headerlink" href="#multilayer-perceptron" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This section assumes the reader has already read through <a class="reference external" href="logreg.html"><em>Classifying MNIST digits using Logistic Regression</em></a>.
+Additionally, it uses the following new Theano functions and concepts:
+<a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html?highlight=tanh">T.tanh</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-shared-variables">shared variables</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/adding.html#adding-two-scalars">basic arithmetic ops</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#computing-gradients">T.grad</a>,
+<a class="reference external" href="gettingstarted.html#l1-l2-regularization"><em>L1 and L2 regularization</em></a>, <a class="reference external" href="http://deeplearning.net/software/theano/library/config.html#config.floatX">floatX</a>. If you intend to run the
+code on GPU also read <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/using_gpu.html">GPU</a>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/mlp.py">here</a>.</p>
+</div>
+<p>The next architecture we are going to present using Theano is the single-hidden
+layer Multi-Layer Perceptron (MLP). An MLP can be viewed as a logistic
+regressor, where the input is first transformed using a learnt non-linear
+transformation <img class="math" src="_images/math/b85bbfb165b853d6f5f9734be4cdabbb453f4e43.png" alt="\Phi"/>. The purpose of this transformation is to project the
+input data into a space where it becomes linearly separable. This intermediate
+layer is referred to as a <strong>hidden layer</strong>.  A single hidden layer is
+sufficient to make MLPs a <strong>universal approximator</strong>. However we will see later
+on that there are substantial benefits to using many such hidden layers, i.e. the
+very premise of <strong>deep learning</strong>. See these course notes for an <a class="reference external" href="http://www.iro.umontreal.ca/~pift6266/H10/notes/mlp.html">introduction
+to MLPs, the back-propagation algorithm, and how to train MLPs</a>.</p>
+<p>This tutorial will again tackle the problem of MNIST digit classification.</p>
+<div class="section" id="the-model">
+<h2>The Model<a class="headerlink" href="#the-model" title="Permalink to this headline">¶</a></h2>
+<p>An MLP (or Artificial Neural Network - ANN) with a single hidden layer
+can be represented graphically as
+follows:</p>
+<div class="figure align-center">
+<img alt="_images/mlp.png" src="_images/mlp.png" />
+</div>
+<p>Formally, a one-hidden layer MLP constitutes a function <img class="math" src="_images/math/4775f33628a8fb51387c4bebea2c79477ce8c12e.png" alt="f: R^D \rightarrow R^L"/>,
+where <img class="math" src="_images/math/9ffb448918db29f2a72f8f87f421b3b3cad18f95.png" alt="D"/> is the size of input vector <img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/>
+and <img class="math" src="_images/math/859ccf4cd60c7bc6b8fa1afc9a42dc811a826d6f.png" alt="L"/> is the size of the output vector <img class="math" src="_images/math/c96dd6ec1dc4ad7520fbdc78fcdbec9edd068d0c.png" alt="f(x)"/>, such that,
+in matrix notation:</p>
+<div class="math">
+<p><img src="_images/math/f3ac04d8d5fb983a75346ecba39fc309b634f968.png" alt="f(x) = G( b^{(2)} + W^{(2)}( s( b^{(1)} + W^{(1)} x)))," /></p>
+</div><p>with bias vectors <img class="math" src="_images/math/3cfaa1479c860b9e3b70fd50b0410f5669977c30.png" alt="b^{(1)}"/>, <img class="math" src="_images/math/e1bcccc52e7bffb8d4b49229557afc4968dae9e0.png" alt="b^{(2)}"/>; weight matrices
+<img class="math" src="_images/math/1eaa9c47d468ebb6f7c89c272d28302cf1d6e5c4.png" alt="W^{(1)}"/>, <img class="math" src="_images/math/9a26b5f3f35aee32d343345552ce0dc19c229826.png" alt="W^{(2)}"/> and activation functions <img class="math" src="_images/math/6e28ce12d49d39f160d5a0ef54077fc98e4b9d2b.png" alt="G"/> and <img class="math" src="_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s"/>.</p>
+<p>The vector <img class="math" src="_images/math/c0f75a799f307d7348d1d1ddaf7fff8647c3c566.png" alt="h(x) = \Phi(x) = s(b^{(1)} + W^{(1)} x)"/> constitutes the hidden layer.
+<img class="math" src="_images/math/7531570b826eae4620aba771b7d637ac13b24851.png" alt="W^{(1)} \in R^{D \times D_h}"/> is the weight matrix connecting the input vector
+to the hidden layer.  Each column <img class="math" src="_images/math/27c788a03ae1a69d33de8b1ff5415fd475d999ac.png" alt="W^{(1)}_{\cdot i}"/> represents the weights
+from the input units to the i-th hidden unit. Typical choices for <img class="math" src="_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s"/>
+include <img class="math" src="_images/math/5ff04e78b13b2f324402f6983a275d64884203ba.png" alt="tanh"/>, with <img class="math" src="_images/math/0ffb690938b6588d8c9526b7de00a5d9fd961f0c.png" alt="tanh(a)=(e^a-e^{-a})/(e^a+e^{-a})"/>,
+or the logistic <img class="math" src="_images/math/c93419afb56740b2f8b397b8d451dfb7e3942b69.png" alt="sigmoid"/> function, with <img class="math" src="_images/math/34dbd4bbb2d66cacf0ad682a298ef5f0041c88bd.png" alt="sigmoid(a)=1/(1+e^{-a})"/>. We will be using
+<img class="math" src="_images/math/5ff04e78b13b2f324402f6983a275d64884203ba.png" alt="tanh"/> in this tutorial because it typically yields to faster training
+(and sometimes also to better local minima). Both the <img class="math" src="_images/math/5ff04e78b13b2f324402f6983a275d64884203ba.png" alt="tanh"/>
+and <img class="math" src="_images/math/c93419afb56740b2f8b397b8d451dfb7e3942b69.png" alt="sigmoid"/> are scalar-to-scalar functions but their natural
+extension to vectors and tensors consists in applying them element-wise
+(e.g. separately on each element of the vector, yielding a same-size vector).</p>
+<p>The output vector is then obtained as: <img class="math" src="_images/math/4ed356d24a83bb88b3e97ddffc51f571437b94fa.png" alt="o(x) = G(b^{(2)} + W^{(2)} h(x))"/>.
+The reader should recognize the form we already used for
+<a class="reference external" href="logreg.html"><em>Classifying MNIST digits using Logistic Regression</em></a>. As before,
+class-membership probabilities can be obtained by choosing <img class="math" src="_images/math/6e28ce12d49d39f160d5a0ef54077fc98e4b9d2b.png" alt="G"/> as the
+<img class="math" src="_images/math/e05af94ab8b9af70356aa3c7bb2bf48a3db4e73c.png" alt="softmax"/> function (in the case of multi-class classification).</p>
+<p>To train an MLP, we learn <strong>all</strong> parameters of the model, and here we use
+<a class="reference external" href="gettingstarted.html#opt-sgd"><em>Stochastic Gradient Descent</em></a> with minibatches.
+The set of parameters to learn is the set <img class="math" src="_images/math/4f3d12279e455b75b7271e3aaf7c2b65feb02fb1.png" alt="\theta =
+\{W^{(2)},b^{(2)},W^{(1)},b^{(1)}\}"/>.  Obtaining the gradients
+<img class="math" src="_images/math/baee41942d6c03e8f81c415e0640691942dead6d.png" alt="\partial{\ell}/\partial{\theta}"/> can be achieved through the
+<strong>backpropagation algorithm</strong> (a special case of the chain-rule of derivation).
+Thankfully, since Theano performs automatic differentation, we will not need to
+cover this in the tutorial !</p>
+</div>
+<div class="section" id="going-from-logistic-regression-to-mlp">
+<h2>Going from logistic regression to MLP<a class="headerlink" href="#going-from-logistic-regression-to-mlp" title="Permalink to this headline">¶</a></h2>
+<p>This tutorial will focus on a single-layer MLP. We start off by
+implementing a class that will represent any given hidden layer. To
+construct the MLP we will then only need to throw a logistic regression
+layer on top.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">HiddenLayer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">,</span> <span class="n">activation</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">tanh</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Typical hidden layer of a MLP: units are fully-connected and have</span>
+<span class="sd">        sigmoidal activation function. Weight matrix W is of shape (n_in,n_out)</span>
+<span class="sd">        and the bias vector b is of shape (n_out,).</span>
+
+<span class="sd">        NOTE : The nonlinearity used here is tanh</span>
+
+<span class="sd">        Hidden unit activation is given by: tanh(dot(input,W) + b)</span>
+
+<span class="sd">        :type rng: numpy.random.RandomState</span>
+<span class="sd">        :param rng: a random number generator used to initialize weights</span>
+
+<span class="sd">        :type input: theano.tensor.dmatrix</span>
+<span class="sd">        :param input: a symbolic tensor of shape (n_examples, n_in)</span>
+
+<span class="sd">        :type n_in: int</span>
+<span class="sd">        :param n_in: dimensionality of input</span>
+
+<span class="sd">        :type n_out: int</span>
+<span class="sd">        :param n_out: number of hidden units</span>
+
+<span class="sd">        :type activation: theano.Op or function</span>
+<span class="sd">        :param activation: Non linearity to be applied in the hidden</span>
+<span class="sd">                              layer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span>
+</pre></div>
+</div>
+<p>The initial values for the weights of a hidden layer <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/> should be uniformly
+sampled from a symmetric interval that depends on the activation function. For
+<img class="math" src="_images/math/5ff04e78b13b2f324402f6983a275d64884203ba.png" alt="tanh"/> activation function results obtained in <a class="reference external" href="references.html#xavier10">[Xavier10]</a> show that the
+interval should be
+<img class="math" src="_images/math/c02deb4d0fc8cc2b93ad6ba41fea7fea459e6c28.png" alt="[-\sqrt{\frac{6}{fan_{in}+fan_{out}}},\sqrt{\frac{6}{fan_{in}+fan_{out}}}]"/>, where
+<img class="math" src="_images/math/156eced5b779531ecd4572425de95f56c20b9f04.png" alt="fan_{in}"/> is the number of units in the <img class="math" src="_images/math/b401ed76b5999e2c020b345ebaa32d72b37ee9e5.png" alt="(i-1)"/>-th layer,
+and <img class="math" src="_images/math/fa9efa43eebc00f999296491a3502861c536dc67.png" alt="fan_{out}"/> is the number of units in the <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/>-th layer. For
+the sigmoid function the interval is <img class="math" src="_images/math/747e421dbc977d3fdda67df550cbb237bf6a3d45.png" alt="[-4\sqrt{\frac{6}{fan_{in}+fan_{out}}},4\sqrt{\frac{6}{fan_{in}+fan_{out}}}]"/>.
+This initialization ensures that, early in training, each neuron operates in a
+regime of its activation function where information can easily be propagated
+both upward (activations flowing from inputs to outputs) and backward
+(gradients flowing from outputs to inputs).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># `W` is initialized with `W_values` which is uniformely sampled</span>
+<span class="c"># from sqrt(-6./(n_in+n_hidden)) and sqrt(6./(n_in+n_hidden))</span>
+<span class="c"># for tanh activation function</span>
+<span class="c"># the output of uniform is converted using asarray to dtype</span>
+<span class="c"># theano.config.floatX so that the code is runable on GPU</span>
+<span class="c"># Note : optimal initialization of weights is dependent on the</span>
+<span class="c">#        activation function used (among other things).</span>
+<span class="c">#        For example, results presented in [Xavier10]_ suggest that you</span>
+<span class="c">#        should use 4 times larger initial weights for sigmoid</span>
+<span class="c">#        compared to tanh</span>
+<span class="c">#        We have no info for other function, so we use the same as tanh.</span>
+<span class="n">W_values</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+        <span class="n">low</span>  <span class="o">=</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_in</span><span class="o">+</span><span class="n">n_out</span><span class="p">)),</span>
+        <span class="n">high</span> <span class="o">=</span>   <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_in</span><span class="o">+</span><span class="n">n_out</span><span class="p">)),</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">)),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="n">theano</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">:</span>
+    <span class="n">W_values</span> <span class="o">*=</span> <span class="mi">4</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">W_values</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;W&#39;</span><span class="p">)</span>
+
+<span class="n">b_values</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_out</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span><span class="o">=</span> <span class="n">b_values</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;b&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that we used a given non linear function as the activation function of the hidden layer. By default this is <tt class="docutils literal"><span class="pre">tanh</span></tt>, but in many cases we might want
+to use something else.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">activation</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+<span class="c"># parameters of the model</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>If you look into theory this class implements the graph that computes
+the hidden layer value <img class="math" src="_images/math/c0f75a799f307d7348d1d1ddaf7fff8647c3c566.png" alt="h(x) = \Phi(x) = s(b^{(1)} + W^{(1)} x)"/>.
+If you give this as input to the <tt class="docutils literal"><span class="pre">LogisticRegression</span></tt> class,
+implemented in the previous tutorial <a class="reference external" href="logreg.html"><em>Classifying MNIST digits using Logistic Regression</em></a>, you get the output
+of the MLP. You can see this in the following short implementation of
+the <tt class="docutils literal"><span class="pre">MLP</span></tt> class :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MLP</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Multi-Layer Perceptron Class</span>
+
+<span class="sd">  A multilayer perceptron is a feedforward artificial neural network model</span>
+<span class="sd">  that has one layer or more of hidden units and nonlinear activations.</span>
+<span class="sd">  Intermediate layers usually have as activation function tanh or the</span>
+<span class="sd">  sigmoid function (defined here by a ``HiddenLayer`` class)  while the</span>
+<span class="sd">  top layer is a softamx layer (defined here by a ``LogisticRegression``</span>
+<span class="sd">  class).</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_hidden</span><span class="p">,</span> <span class="n">n_out</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;Initialize the parameters for the multilayer perceptron</span>
+
+<span class="sd">      :type rng: numpy.random.RandomState</span>
+<span class="sd">      :param rng: a random number generator used to initialize weights</span>
+
+<span class="sd">      :type input: theano.tensor.TensorType</span>
+<span class="sd">      :param input: symbolic variable that describes the input of the</span>
+<span class="sd">      architecture (one minibatch)</span>
+
+<span class="sd">      :type n_in: int</span>
+<span class="sd">      :param n_in: number of input units, the dimension of the space in</span>
+<span class="sd">      which the datapoints lie</span>
+
+<span class="sd">      :type n_hidden: int</span>
+<span class="sd">      :param n_hidden: number of hidden units</span>
+
+<span class="sd">      :type n_out: int</span>
+<span class="sd">      :param n_out: number of output units, the dimension of the space in</span>
+<span class="sd">      which the labels lie</span>
+
+<span class="sd">      &quot;&quot;&quot;</span>
+
+      <span class="c"># Since we are dealing with a one hidden layer MLP, this will</span>
+      <span class="c"># translate into a Hidden Layer connected to the LogisticRegression</span>
+      <span class="c"># layer</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span> <span class="o">=</span> <span class="n">HiddenLayer</span><span class="p">(</span><span class="n">rng</span> <span class="o">=</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">,</span>
+                               <span class="n">n_in</span> <span class="o">=</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span> <span class="o">=</span> <span class="n">n_hidden</span><span class="p">,</span>
+                               <span class="n">activation</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">tanh</span><span class="p">)</span>
+
+      <span class="c"># The logistic regression layer gets as input the hidden units</span>
+      <span class="c"># of the hidden layer</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span>
+                                  <span class="nb">input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+                                  <span class="n">n_in</span>  <span class="o">=</span> <span class="n">n_hidden</span><span class="p">,</span>
+                                  <span class="n">n_out</span> <span class="o">=</span> <span class="n">n_out</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this tutorial we will also use L1 and L2 regularization (see
+<a class="reference external" href="gettingstarted.html#l1-l2-regularization"><em>L1 and L2 regularization</em></a>). For this, we need to compute the L1 norm and the squared L2
+norm of the weights <img class="math" src="_images/math/b07b21d31ff0ab976187058eb58f76769ed033eb.png" alt="W^{(1)}, W^{(2)}"/>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># L1 norm ; one regularization option is to enforce L1 norm to</span>
+<span class="c"># be small</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">L1</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> \
+        <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="c"># square of L2 norm ; one regularization option is to enforce</span>
+<span class="c"># square of L2 norm to be small</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">L2_sqr</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">W</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> \
+            <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">W</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="c"># negative log likelihood of the MLP is given by the negative</span>
+<span class="c"># log likelihood of the output of the model, computed in the</span>
+<span class="c"># logistic regression layer</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">negative_log_likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">negative_log_likelihood</span>
+<span class="c"># same holds for the function computing the number of errors</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">errors</span>
+
+<span class="c"># the parameters of the model are the parameters of the two layer it is</span>
+<span class="c"># made out of</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+</div>
+<p>As before, we train this model using stochastic gradient descent with
+mini-batches. The difference is that we modify the cost function to include the
+regularization term. <tt class="docutils literal"><span class="pre">L1_reg</span></tt> and <tt class="docutils literal"><span class="pre">L2_reg</span></tt> are the hyperparameters
+controlling the weight of these regularization terms in the total cost function.
+The code that computes the new cost is:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># the cost we minimize during training is the negative log likelihood of</span>
+<span class="c"># the model plus the regularization terms (L1 and L2); cost is expressed</span>
+<span class="c"># here symbolically</span>
+<span class="n">cost</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">negative_log_likelihood</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> \
+     <span class="o">+</span> <span class="n">L1_reg</span> <span class="o">*</span> <span class="n">L1</span> \
+     <span class="o">+</span> <span class="n">L2_reg</span> <span class="o">*</span> <span class="n">L2_sqr</span>
+</pre></div>
+</div>
+<p>We then update the parameters of the model using the gradient. This code is
+almost identical to the one for logistic regression. Only the number of
+parameters differ. To get around this ( and write code that could work
+for any number of parameters) we will use the list of parameters that
+we created with the model <tt class="docutils literal"><span class="pre">params</span></tt> and parse it, computing a gradient
+at each step.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># compute the gradient of cost with respect to theta (stored in params)</span>
+<span class="c"># the resulting gradients will be stored in a list gparams</span>
+<span class="n">gparams</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">classifier</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+    <span class="n">gparam</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span>
+    <span class="n">gparams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gparam</span><span class="p">)</span>
+
+
+<span class="c"># specify how to update the parameters of the model as a dictionary</span>
+<span class="n">updates</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="c"># given two list the zip A = [ a1,a2,a3,a4] and B = [b1,b2,b3,b4] of</span>
+<span class="c"># same length, zip generates a list C of same size, where each element</span>
+<span class="c"># is a pair formed from the two lists :</span>
+<span class="c">#    C = [ (a1,b1), (a2,b2), (a3,b3) , (a4,b4) ]</span>
+<span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">gparam</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">classifier</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">gparams</span><span class="p">):</span>
+    <span class="n">updates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span> <span class="o">-</span> <span class="n">learning_rate</span><span class="o">*</span><span class="n">gparam</span>
+
+
+<span class="c"># compiling a Theano function `train_model` that returns the cost, but</span>
+<span class="c"># in the same time updates the parameter of the model based on the rules</span>
+<span class="c"># defined in `updates`</span>
+<span class="n">train_model</span> <span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span>
+        <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+        <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">x</span><span class="p">:</span><span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+            <span class="n">y</span><span class="p">:</span><span class="n">train_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="putting-it-all-together">
+<h2>Putting it All Together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h2>
+<p>Having covered the basic concepts, writing an MLP class becomes quite easy.
+The code below shows how this can be done, in a way which is analogous to our previous logistic regression implementation.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This tutorial introduces the multilayer perceptron using Theano.  </span>
+
+<span class="sd"> A multilayer perceptron is a logistic regressor where</span>
+<span class="sd">instead of feeding the input to the logistic regression you insert a</span>
+<span class="sd">intermediate layer, called the hidden layer, that has a nonlinear </span>
+<span class="sd">activation function (usually tanh or sigmoid) . One can use many such </span>
+<span class="sd">hidden layers making the architecture deep. The tutorial will also tackle </span>
+<span class="sd">the problem of MNIST digit classification.</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    f(x) = G( b^{(2)} + W^{(2)}( s( b^{(1)} + W^{(1)} x))),</span>
+
+<span class="sd">References:</span>
+
+<span class="sd">    - textbooks: &quot;Pattern Recognition and Machine Learning&quot; - </span>
+<span class="sd">                 Christopher M. Bishop, section 5</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__docformat__</span> <span class="o">=</span> <span class="s">&#39;restructedtext en&#39;</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span><span class="o">,</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">cPickle</span><span class="o">,</span> <span class="nn">gzip</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">theano</span>
+<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="kn">as</span> <span class="nn">T</span>
+
+
+<span class="kn">from</span> <span class="nn">logistic_sgd</span> <span class="kn">import</span> <span class="n">LogisticRegression</span><span class="p">,</span> <span class="n">load_data</span>
+
+
+<span class="k">class</span> <span class="nc">HiddenLayer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">,</span> <span class="n">activation</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">tanh</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Typical hidden layer of a MLP: units are fully-connected and have</span>
+<span class="sd">        sigmoidal activation function. Weight matrix W is of shape (n_in,n_out)</span>
+<span class="sd">        and the bias vector b is of shape (n_out,).</span>
+
+<span class="sd">        NOTE : The nonlinearity used here is tanh</span>
+<span class="sd">        </span>
+<span class="sd">        Hidden unit activation is given by: tanh(dot(input,W) + b)</span>
+
+<span class="sd">        :type rng: numpy.random.RandomState</span>
+<span class="sd">        :param rng: a random number generator used to initialize weights</span>
+
+<span class="sd">        :type input: theano.tensor.dmatrix</span>
+<span class="sd">        :param input: a symbolic tensor of shape (n_examples, n_in)</span>
+
+<span class="sd">        :type n_in: int</span>
+<span class="sd">        :param n_in: dimensionality of input</span>
+
+<span class="sd">        :type n_out: int</span>
+<span class="sd">        :param n_out: number of hidden units</span>
+
+<span class="sd">        :type activation: theano.Op or function</span>
+<span class="sd">        :param activation: Non linearity to be applied in the hidden </span>
+<span class="sd">                              layer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span>
+
+        <span class="c"># `W` is initialized with `W_values` which is uniformely sampled</span>
+        <span class="c"># from sqrt(-6./(n_in+n_hidden)) and sqrt(6./(n_in+n_hidden))</span>
+        <span class="c"># for tanh activation function</span>
+        <span class="c"># the output of uniform if converted using asarray to dtype </span>
+        <span class="c"># theano.config.floatX so that the code is runable on GPU</span>
+        <span class="c"># Note : optimal initialization of weights is dependent on the</span>
+        <span class="c">#        activation function used (among other things).</span>
+        <span class="c">#        For example, results presented in [Xavier10] suggest that you </span>
+        <span class="c">#        should use 4 times larger initial weights for sigmoid </span>
+        <span class="c">#        compared to tanh</span>
+        <span class="c">#        We have no info for other function, so we use the same as tanh.</span>
+        <span class="n">W_values</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+                <span class="n">low</span>  <span class="o">=</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_in</span><span class="o">+</span><span class="n">n_out</span><span class="p">)),</span>
+                <span class="n">high</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_in</span><span class="o">+</span><span class="n">n_out</span><span class="p">)),</span>
+                <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">)),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="n">theano</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">:</span>
+            <span class="n">W_values</span> <span class="o">*=</span> <span class="mi">4</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">W_values</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;W&#39;</span><span class="p">)</span>
+
+        <span class="n">b_values</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_out</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span><span class="o">=</span> <span class="n">b_values</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;b&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">activation</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+        <span class="c"># parameters of the model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">MLP</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Multi-Layer Perceptron Class</span>
+
+<span class="sd">    A multilayer perceptron is a feedforward artificial neural network model </span>
+<span class="sd">    that has one layer or more of hidden units and nonlinear activations. </span>
+<span class="sd">    Intermediate layers usually have as activation function thanh or the </span>
+<span class="sd">    sigmoid function (defined here by a ``SigmoidalLayer`` class)  while the </span>
+<span class="sd">    top layer is a softamx layer (defined here by a ``LogisticRegression`` </span>
+<span class="sd">    class). </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_hidden</span><span class="p">,</span> <span class="n">n_out</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the parameters for the multilayer perceptron</span>
+
+<span class="sd">        :type rng: numpy.random.RandomState</span>
+<span class="sd">        :param rng: a random number generator used to initialize weights</span>
+
+<span class="sd">        :type input: theano.tensor.TensorType</span>
+<span class="sd">        :param input: symbolic variable that describes the input of the </span>
+<span class="sd">        architecture (one minibatch)</span>
+
+<span class="sd">        :type n_in: int</span>
+<span class="sd">        :param n_in: number of input units, the dimension of the space in </span>
+<span class="sd">        which the datapoints lie</span>
+
+<span class="sd">        :type n_hidden: int</span>
+<span class="sd">        :param n_hidden: number of hidden units </span>
+
+<span class="sd">        :type n_out: int</span>
+<span class="sd">        :param n_out: number of output units, the dimension of the space in </span>
+<span class="sd">        which the labels lie</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># Since we are dealing with a one hidden layer MLP, this will </span>
+        <span class="c"># translate into a TanhLayer connected to the LogisticRegression</span>
+        <span class="c"># layer; this can be replaced by a SigmoidalLayer, or a layer </span>
+        <span class="c"># implementing any other nonlinearity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span> <span class="o">=</span> <span class="n">HiddenLayer</span><span class="p">(</span><span class="n">rng</span> <span class="o">=</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">,</span> 
+                                 <span class="n">n_in</span> <span class="o">=</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span> <span class="o">=</span> <span class="n">n_hidden</span><span class="p">,</span>
+                                 <span class="n">activation</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">tanh</span><span class="p">)</span>
+
+        <span class="c"># The logistic regression layer gets as input the hidden units </span>
+        <span class="c"># of the hidden layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span> 
+                                    <span class="nb">input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+                                    <span class="n">n_in</span>  <span class="o">=</span> <span class="n">n_hidden</span><span class="p">,</span>
+                                    <span class="n">n_out</span> <span class="o">=</span> <span class="n">n_out</span><span class="p">)</span>
+
+        <span class="c"># L1 norm ; one regularization option is to enforce L1 norm to </span>
+        <span class="c"># be small </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L1</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> \
+                <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="c"># square of L2 norm ; one regularization option is to enforce </span>
+        <span class="c"># square of L2 norm to be small</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L2_sqr</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">W</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> \
+                    <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">W</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="c"># negative log likelihood of the MLP is given by the negative </span>
+        <span class="c"># log likelihood of the output of the model, computed in the </span>
+        <span class="c"># logistic regression layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">negative_log_likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">negative_log_likelihood</span>
+        <span class="c"># same holds for the function computing the number of errors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">errors</span>
+
+        <span class="c"># the parameters of the model are the parameters of the two layer it is</span>
+        <span class="c"># made out of</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hiddenLayer</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">logRegressionLayer</span><span class="o">.</span><span class="n">params</span>
+
+
+<span class="k">def</span> <span class="nf">test_mlp</span><span class="p">(</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">L1_reg</span> <span class="o">=</span> <span class="mf">0.00</span><span class="p">,</span> <span class="n">L2_reg</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="s">&#39;data/mnist.pkl.gz&#39;</span><span class="p">,</span> <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Demonstrate stochastic gradient descent optimization for a multilayer </span>
+<span class="sd">    perceptron</span>
+
+<span class="sd">    This is demonstrated on MNIST.</span>
+
+<span class="sd">    :type learning_rate: float</span>
+<span class="sd">    :param learning_rate: learning rate used (factor for the stochastic </span>
+<span class="sd">    gradient</span>
+
+<span class="sd">    :type L1_reg: float</span>
+<span class="sd">    :param L1_reg: L1-norm&#39;s weight when added to the cost (see </span>
+<span class="sd">    regularization)</span>
+
+<span class="sd">    :type L2_reg: float</span>
+<span class="sd">    :param L2_reg: L2-norm&#39;s weight when added to the cost (see </span>
+<span class="sd">    regularization)</span>
+<span class="sd"> </span>
+<span class="sd">    :type n_epochs: int</span>
+<span class="sd">    :param n_epochs: maximal number of epochs to run the optimizer </span>
+
+<span class="sd">    :type dataset: string</span>
+<span class="sd">    :param dataset: the path of the MNIST dataset file from </span>
+<span class="sd">                         http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz</span>
+
+
+<span class="sd">   &quot;&quot;&quot;</span>
+    <span class="n">datasets</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="n">train_set_x</span><span class="p">,</span> <span class="n">train_set_y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">valid_set_x</span><span class="p">,</span> <span class="n">valid_set_y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">test_set_x</span> <span class="p">,</span> <span class="n">test_set_y</span>  <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+
+
+    <span class="c"># compute number of minibatches for training, validation and testing</span>
+    <span class="n">n_train_batches</span> <span class="o">=</span> <span class="n">train_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">batch_size</span>
+    <span class="n">n_valid_batches</span> <span class="o">=</span> <span class="n">valid_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">batch_size</span>
+    <span class="n">n_test_batches</span>  <span class="o">=</span> <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="o">/</span> <span class="n">batch_size</span>
+
+    <span class="c">######################</span>
+    <span class="c"># BUILD ACTUAL MODEL #</span>
+    <span class="c">###################### </span>
+    <span class="k">print</span> <span class="s">&#39;... building the model&#39;</span>
+
+    <span class="c"># allocate symbolic variables for the data</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lscalar</span><span class="p">()</span>    <span class="c"># index to a [mini]batch </span>
+    <span class="n">x</span>     <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>  <span class="c"># the data is presented as rasterized images</span>
+    <span class="n">y</span>     <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">ivector</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span> <span class="c"># the labels are presented as 1D vector of </span>
+                           <span class="c"># [int] labels</span>
+
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>
+
+    <span class="c"># construct the MLP class</span>
+    <span class="n">classifier</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">rng</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">n_in</span><span class="o">=</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="n">n_hidden</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">n_out</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+    <span class="c"># the cost we minimize during training is the negative log likelihood of </span>
+    <span class="c"># the model plus the regularization terms (L1 and L2); cost is expressed</span>
+    <span class="c"># here symbolically</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">negative_log_likelihood</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> \
+         <span class="o">+</span> <span class="n">L1_reg</span> <span class="o">*</span> <span class="n">classifier</span><span class="o">.</span><span class="n">L1</span> \
+         <span class="o">+</span> <span class="n">L2_reg</span> <span class="o">*</span> <span class="n">classifier</span><span class="o">.</span><span class="n">L2_sqr</span> 
+
+    <span class="c"># compiling a Theano function that computes the mistakes that are made</span>
+    <span class="c"># by the model on a minibatch</span>
+    <span class="n">test_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> 
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+            <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">x</span><span class="p">:</span><span class="n">test_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+                <span class="n">y</span><span class="p">:</span><span class="n">test_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="n">validate_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> 
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+            <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">x</span><span class="p">:</span><span class="n">valid_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+                <span class="n">y</span><span class="p">:</span><span class="n">valid_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="c"># compute the gradient of cost with respect to theta (sotred in params)</span>
+    <span class="c"># the resulting gradients will be stored in a list gparams</span>
+    <span class="n">gparams</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">classifier</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+        <span class="n">gparam</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span>
+        <span class="n">gparams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gparam</span><span class="p">)</span>
+
+
+    <span class="c"># specify how to update the parameters of the model as a dictionary</span>
+    <span class="n">updates</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c"># given two list the zip A = [ a1,a2,a3,a4] and B = [b1,b2,b3,b4] of </span>
+    <span class="c"># same length, zip generates a list C of same size, where each element</span>
+    <span class="c"># is a pair formed from the two lists : </span>
+    <span class="c">#    C = [ (a1,b1), (a2,b2), (a3,b3) , (a4,b4) ] </span>
+    <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">gparam</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">classifier</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">gparams</span><span class="p">):</span>
+        <span class="n">updates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span> <span class="o">-</span> <span class="n">learning_rate</span><span class="o">*</span><span class="n">gparam</span>
+
+    <span class="c"># compiling a Theano function `train_model` that returns the cost, but  </span>
+    <span class="c"># in the same time updates the parameter of the model based on the rules </span>
+    <span class="c"># defined in `updates`</span>
+    <span class="n">train_model</span> <span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span> 
+            <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+            <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">x</span><span class="p">:</span><span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+                <span class="n">y</span><span class="p">:</span><span class="n">train_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="c">###############</span>
+    <span class="c"># TRAIN MODEL #</span>
+    <span class="c">###############</span>
+    <span class="k">print</span> <span class="s">&#39;... training&#39;</span>
+
+    <span class="c"># early-stopping parameters</span>
+    <span class="n">patience</span>              <span class="o">=</span> <span class="mi">10000</span> <span class="c"># look as this many examples regardless</span>
+    <span class="n">patience_increase</span>     <span class="o">=</span> <span class="mi">2</span>     <span class="c"># wait this much longer when a new best is </span>
+                                  <span class="c"># found</span>
+    <span class="n">improvement_threshold</span> <span class="o">=</span> <span class="mf">0.995</span> <span class="c"># a relative improvement of this much is </span>
+                                  <span class="c"># considered significant</span>
+    <span class="n">validation_frequency</span>  <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">,</span><span class="n">patience</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>  
+                                  <span class="c"># go through this many </span>
+                                  <span class="c"># minibatche before checking the network </span>
+                                  <span class="c"># on the validation set; in this case we </span>
+                                  <span class="c"># check every epoch </span>
+
+
+    <span class="n">best_params</span>          <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">best_validation_loss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span>
+    <span class="n">best_iter</span>            <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">test_score</span>           <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+    <span class="n">epoch</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">done_looping</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">while</span> <span class="p">(</span><span class="n">epoch</span> <span class="o">&lt;</span> <span class="n">n_epochs</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">done_looping</span><span class="p">):</span>
+      <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch</span> <span class="o">+</span> <span class="mi">1</span>
+      <span class="k">for</span> <span class="n">minibatch_index</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">):</span>
+
+        <span class="n">minibatch_avg_cost</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">minibatch_index</span><span class="p">)</span>
+        <span class="c"># iteration number</span>
+        <span class="nb">iter</span> <span class="o">=</span> <span class="n">epoch</span> <span class="o">*</span> <span class="n">n_train_batches</span> <span class="o">+</span> <span class="n">minibatch_index</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">iter</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">validation_frequency</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+            <span class="c"># compute zero-one loss on validation set </span>
+            <span class="n">validation_losses</span> <span class="o">=</span> <span class="p">[</span><span class="n">validate_model</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_valid_batches</span><span class="p">)]</span>
+            <span class="n">this_validation_loss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">validation_losses</span><span class="p">)</span>
+
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;epoch </span><span class="si">%i</span><span class="s">, minibatch </span><span class="si">%i</span><span class="s">/</span><span class="si">%i</span><span class="s">, validation error </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">&#39;</span> <span class="o">%</span> \
+                 <span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">minibatch_index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_train_batches</span><span class="p">,</span> \
+                  <span class="n">this_validation_loss</span><span class="o">*</span><span class="mf">100.</span><span class="p">))</span>
+
+
+            <span class="c"># if we got the best validation score until now</span>
+            <span class="k">if</span> <span class="n">this_validation_loss</span> <span class="o">&lt;</span> <span class="n">best_validation_loss</span><span class="p">:</span>
+                <span class="c">#improve patience if loss improvement is good enough</span>
+                <span class="k">if</span> <span class="n">this_validation_loss</span> <span class="o">&lt;</span> <span class="n">best_validation_loss</span> <span class="o">*</span>  \
+                       <span class="n">improvement_threshold</span> <span class="p">:</span>
+                    <span class="n">patience</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">patience</span><span class="p">,</span> <span class="nb">iter</span> <span class="o">*</span> <span class="n">patience_increase</span><span class="p">)</span>
+
+                <span class="n">best_validation_loss</span> <span class="o">=</span> <span class="n">this_validation_loss</span>
+                <span class="n">best_iter</span> <span class="o">=</span> <span class="nb">iter</span>
+                <span class="c"># test it on the test set</span>
+
+                <span class="n">test_losses</span> <span class="o">=</span> <span class="p">[</span><span class="n">test_model</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_test_batches</span><span class="p">)]</span>
+                <span class="n">test_score</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">test_losses</span><span class="p">)</span>
+
+                <span class="k">print</span><span class="p">((</span><span class="s">&#39;     epoch </span><span class="si">%i</span><span class="s">, minibatch </span><span class="si">%i</span><span class="s">/</span><span class="si">%i</span><span class="s">, test error of best &#39;</span> 
+                       <span class="s">&#39;model </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">&#39;</span><span class="p">)</span> <span class="o">%</span> \
+                  <span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">minibatch_index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_train_batches</span><span class="p">,</span><span class="n">test_score</span><span class="o">*</span><span class="mf">100.</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">patience</span> <span class="o">&lt;=</span> <span class="nb">iter</span> <span class="p">:</span>
+                <span class="n">done_looping</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">break</span>
+
+
+    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">((</span><span class="s">&#39;Optimization complete. Best validation score of </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s"> &#39;</span>
+           <span class="s">&#39;obtained at iteration </span><span class="si">%i</span><span class="s">, with test performance </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">&#39;</span><span class="p">)</span> <span class="o">%</span>  
+                 <span class="p">(</span><span class="n">best_validation_loss</span> <span class="o">*</span> <span class="mf">100.</span><span class="p">,</span> <span class="n">best_iter</span><span class="p">,</span> <span class="n">test_score</span><span class="o">*</span><span class="mf">100.</span><span class="p">))</span>
+    <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;The code for file &#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">__file__</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; ran for </span><span class="si">%.2f</span><span class="s">h&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">end_time</span><span class="o">-</span><span class="n">start_time</span><span class="p">)</span><span class="o">/</span><span class="mf">60.</span><span class="p">))</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">test_mlp</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The user can then run the code by calling :</p>
+<div class="highlight-bash"><div class="highlight"><pre>python code/mlp.py
+</pre></div>
+</div>
+<p>The output one should expect is of the form :</p>
+<div class="highlight-bash"><div class="highlight"><pre>Optimization <span class="nb">complete </span>with best validation score of 2.08%, with <span class="nb">test </span>performance 2.18%
+The code ran <span class="k">for </span>55.57 minutes
+</pre></div>
+</div>
+<p>On an Intel(R) Core(TM)2 Duo CPU E8400 &#64; 3.00 Ghz  the code runs with
+approximately 1.78 epoch/minute and it took 99 epochs to reach a test
+error of 2.18%.</p>
+<p>To put this into perspective, we refer the reader to the results section of <a class="reference external" href="http://yann.lecun.com/exdb/mnist">this</a>  page.</p>
+</div>
+<div class="section" id="tips-and-tricks-for-training-mlps">
+<h2>Tips and Tricks for training MLPs<a class="headerlink" href="#tips-and-tricks-for-training-mlps" title="Permalink to this headline">¶</a></h2>
+<p>There are several hyper-parameters in the above code, which are not (and,
+generally speaking, cannot be) optimized by gradient descent. Strictly speaking,
+finding an optimal set of values for these
+hyper-parameters is not a feasible problem. First, we can&#8217;t simply optimize
+each of them independently. Second, we cannot readily apply gradient
+techniques that we described previously (partly because some parameters are
+discrete values and others are real-valued). Third, the optimization problem
+is not convex and finding a (local) minimum would involve a non-trivial
+amount of work.</p>
+<p>The good news is that over the last 25 years, researchers have devised various
+rules of thumb for choosing hyper-parameters in a neural network. A very
+good overview of these tricks can be found in <a class="reference external" href="http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf">Efficient
+BackProp</a> by Yann LeCun,
+Leon Bottou, Genevieve Orr, and Klaus-Robert Mueller. In here, we summarize
+the same issues, with an emphasis on the parameters and techniques that we
+actually used in our code.</p>
+<div class="section" id="nonlinearity">
+<h3>Nonlinearity<a class="headerlink" href="#nonlinearity" title="Permalink to this headline">¶</a></h3>
+<p>Two of the most common ones are the <img class="math" src="_images/math/c93419afb56740b2f8b397b8d451dfb7e3942b69.png" alt="sigmoid"/> and the <img class="math" src="_images/math/5ff04e78b13b2f324402f6983a275d64884203ba.png" alt="tanh"/> function. For
+reasons explained in <a class="reference external" href="http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf">Section 4.4</a>, nonlinearities that
+are symmetric around the origin are preferred because they tend to produce
+zero-mean inputs to the next layer (which is a desirable property).
+Empirically, we have observed that the <img class="math" src="_images/math/5ff04e78b13b2f324402f6983a275d64884203ba.png" alt="tanh"/> has better convergence
+properties.</p>
+</div>
+<div class="section" id="weight-initialization">
+<h3>Weight initialization<a class="headerlink" href="#weight-initialization" title="Permalink to this headline">¶</a></h3>
+<p>At initialization we want the weights to be small enough around the origin
+so that the activation function operates in its linear regime, where gradients are
+the largest. Other desirable properties, especially for deep networks,
+are to conserve variance of the activation as well as variance of back-propagated gradients from layer to layer.
+This allows information to flow well upward and downward in the network and
+reduces discrepancies between layers.
+Under some assumptions, a compromise between these two constraints leads to the following
+initialization: <img class="math" src="_images/math/c39b403bb86d4c41cc8de6cc6b523d13329859c9.png" alt="uniform[-\frac{6}{\sqrt{fan_{in}+fan_{out}}},\frac{6}{\sqrt{fan_{in}+fan_{out}}}]"/>
+for tanh and <img class="math" src="_images/math/3a7c3f039012a126ce85cfc9ed967600916edcf0.png" alt="uniform[-4*\frac{6}{\sqrt{fan_{in}+fan_{out}}},4*\frac{6}{\sqrt{fan_{in}+fan_{out}}}]"/>
+for sigmoid. Where <img class="math" src="_images/math/156eced5b779531ecd4572425de95f56c20b9f04.png" alt="fan_{in}"/> is the number of inputs and <img class="math" src="_images/math/fa9efa43eebc00f999296491a3502861c536dc67.png" alt="fan_{out}"/> the number of hidden units.
+For mathematical considerations please refer to <a class="reference external" href="references.html#xavier10">[Xavier10]</a>.</p>
+</div>
+<div class="section" id="learning-rate">
+<h3>Learning rate<a class="headerlink" href="#learning-rate" title="Permalink to this headline">¶</a></h3>
+<p>There is a great deal of literature on choosing a good learning rate. The
+simplest solution is to simply have a constant rate. Rule of thumb: try
+several log-spaced values (<img class="math" src="_images/math/ec6dc69f8f6cabd052705ef3f4af6d2aab517566.png" alt="10^{-1},10^{-2},\ldots"/>) and narrow the
+(logarithmic) grid search to the region where you obtain the lowest
+validation error.</p>
+<p>Decreasing the learning rate over time is sometimes a good idea. One simple
+rule for doing that is <img class="math" src="_images/math/49562c886130a7581cf3f5ccbcb6be11c459e4fe.png" alt="\frac{\mu_0}{1 + d\times t}"/> where
+<img class="math" src="_images/math/7548319dd93c27598143e27cd09522e0c727ef4f.png" alt="\mu_0"/> is the initial rate (chosen, perhaps, using the grid search
+technique explained above), <img class="math" src="_images/math/96ab646de7704969b91c76a214126b45f2b07b25.png" alt="d"/> is a so-called &#8220;decrease constant&#8221;
+which controls the rate at which the learning rate decreases (typically, a
+smaller positive number, <img class="math" src="_images/math/8f499799895502374ed1c7331071a0bc015bce99.png" alt="10^{-3}"/> and smaller) and <img class="math" src="_images/math/e0d2bf360290fd61d1c1557e763f2622363b3d35.png" alt="t"/> is the
+epoch/stage.</p>
+<p><a class="reference external" href="http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf">Section 4.7</a> details
+procedures for choosing a learning rate for each parameter (weight) in our
+network and for choosing them adaptively based on the error of the
+classifier.</p>
+</div>
+<div class="section" id="number-of-hidden-units">
+<h3>Number of hidden units<a class="headerlink" href="#number-of-hidden-units" title="Permalink to this headline">¶</a></h3>
+<p>This hyper-parameter is very much dataset-dependent. Vaguely speaking, the
+more complicated the input distribution is, the more capacity the network
+will require to model it, and so the larger the number of hidden units that
+will be needed (note that the number of weights in a layer, perhaps a more direct
+measure of capacity, is <img class="math" src="_images/math/3a8deddff07505089b4d00ab02e18e6f6f45ba4c.png" alt="D\times D_h"/> (recall <img class="math" src="_images/math/9ffb448918db29f2a72f8f87f421b3b3cad18f95.png" alt="D"/> is the number of
+inputs and <img class="math" src="_images/math/ac89381b4d17c0a825423a83ba895202abf76809.png" alt="D_h"/> is the number of hidden units).</p>
+<p>Unless we employ some regularization scheme (early stopping or L1/L2
+penalties), a typical number of hidden  units vs. generalization performance graph will be U-shaped.</p>
+</div>
+<div class="section" id="regularization-parameter">
+<h3>Regularization parameter<a class="headerlink" href="#regularization-parameter" title="Permalink to this headline">¶</a></h3>
+<p>Typical values to try for the L1/L2 regularization parameter <img class="math" src="_images/math/ce4588fd900d02afcbd260bc07f54cce49a7dc4a.png" alt="\lambda"/>
+are <img class="math" src="_images/math/cc30028014271eac765687e90aa4174b334590d4.png" alt="10^{-2},10^{-3},\ldots"/>. In the framework that we described so
+far, optimizing this parameter will not lead to significantly better
+solutions, but is worth exploring nonetheless.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="lenet.html" title="Convolutional Neural Networks (LeNet)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="logreg.html" title="Classifying MNIST digits using Logistic Regression"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

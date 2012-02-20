@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Miscellaneous &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="References" href="references.html" />
+    <link rel="prev" title="Deep Belief Networks" href="DBN.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="references.html" title="References"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="DBN.html" title="Deep Belief Networks"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Miscellaneous</a><ul>
+<li><a class="reference external" href="#plotting-samples-and-filters">Plotting Samples and Filters</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="DBN.html"
+                                  title="previous chapter">Deep Belief Networks</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="references.html"
+                                  title="next chapter">References</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/utilities.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="miscellaneous">
+<h1>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="plotting-samples-and-filters">
+<span id="how-to-plot"></span><h2>Plotting Samples and Filters<a class="headerlink" href="#plotting-samples-and-filters" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/utils.py">here</a>.</p>
+</div>
+<p>To plot a sample, what we need to do is to take the visible units, which
+are a flattened image (there is no 2D structure to the visible units,
+just a 1D string of unit activations) and reshape it into a 2D image. The order in
+which the points from the 1D array go into the 2D image is given by the
+order in which the inital MNIST images where converted into a 1D array.
+Lucky for us this is just a call of the <tt class="docutils literal"><span class="pre">numpy.reshape</span></tt> function.</p>
+<p>Plotting the weights is a bit more tricky. We have <tt class="docutils literal"><span class="pre">n_hidden</span></tt> hidden
+units, each of them corresponding to a column of the weight matrix. A
+column has the same shape as the visible, where the weight corresponding
+to the connection with visible unit <img class="math" src="_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j"/> is at position <img class="math" src="_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j"/>. Therefore,
+if we reshape every such column, using <tt class="docutils literal"><span class="pre">numpy.reshape</span></tt>, we get a
+filter image that tells us how this hidden unit is influenced by
+the input image.</p>
+<p>We need a utility function that takes a minibatch, or the weight matrix,
+and converts each row ( for the weight matrix we do a transpose ) into a
+2D image and then tile these images together.  Once we converted the
+minibatch or the weights in this image of tiles, we can use PIL to plot
+and save. <a class="reference external" href="http://www.pythonware.com/products/pil/">PIL</a> is a standard
+python libarary to deal with images.</p>
+<p>Tiling minibatches together is done for us by the
+<tt class="docutils literal"><span class="pre">tile_raster_image</span></tt> function which we provide here.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">scale_to_unit_interval</span><span class="p">(</span><span class="n">ndar</span><span class="p">,</span><span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; Scales all values in the ndarray ndar to be between 0 and 1 &quot;&quot;&quot;</span>
+  <span class="n">ndar</span> <span class="o">=</span> <span class="n">ndar</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+  <span class="n">ndar</span> <span class="o">-=</span> <span class="n">ndar</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+  <span class="n">ndar</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ndar</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="n">eps</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">ndar</span>
+
+
+<span class="k">def</span> <span class="nf">tile_raster_images</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">img_shape</span><span class="p">,</span> <span class="n">tile_shape</span><span class="p">,</span><span class="n">tile_spacing</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">scale_rows_to_unit_interval</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">output_pixel_vals</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Transform an array with one flattened image per row, into an array in</span>
+<span class="sd">  which images are reshaped and layed out like tiles on a floor.</span>
+
+<span class="sd">  This function is useful for visualizing datasets whose rows are images,</span>
+<span class="sd">  and also columns of matrices for transforming those rows</span>
+<span class="sd">  (such as the first layer of a neural net).</span>
+
+<span class="sd">  :type X: a 2-D ndarray or a tuple of 4 channels, elements of which can</span>
+<span class="sd">  be 2-D ndarrays or None;</span>
+<span class="sd">  :param X: a 2-D array in which every row is a flattened image.</span>
+
+<span class="sd">  :type img_shape: tuple; (height, width)</span>
+<span class="sd">  :param img_shape: the original shape of each image</span>
+
+<span class="sd">  :type tile_shape: tuple; (rows, cols)</span>
+<span class="sd">  :param tile_shape: the number of images to tile (rows, cols)</span>
+
+<span class="sd">  :param output_pixel_vals: if output should be pixel values (i.e. int8</span>
+<span class="sd">  values) or floats</span>
+
+<span class="sd">  :param scale_rows_to_unit_interval: if the values need to be scaled before</span>
+<span class="sd">  being plotted to [0,1] or not</span>
+
+
+<span class="sd">  :returns: array suitable for viewing as an image.</span>
+<span class="sd">  (See:`PIL.Image.fromarray`.)</span>
+<span class="sd">  :rtype: a 2-d array with same dtype as X.</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">img_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">tile_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">tile_spacing</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+  <span class="c"># The expression below can be re-written in a more C style as</span>
+  <span class="c"># follows :</span>
+  <span class="c">#</span>
+  <span class="c"># out_shape    = [0,0]</span>
+  <span class="c"># out_shape[0] = (img_shape[0]+tile_spacing[0])*tile_shape[0] -</span>
+  <span class="c">#                tile_spacing[0]</span>
+  <span class="c"># out_shape[1] = (img_shape[1]+tile_spacing[1])*tile_shape[1] -</span>
+  <span class="c">#                tile_spacing[1]</span>
+  <span class="n">out_shape</span> <span class="o">=</span> <span class="p">[(</span><span class="n">ishp</span> <span class="o">+</span> <span class="n">tsp</span><span class="p">)</span> <span class="o">*</span> <span class="n">tshp</span> <span class="o">-</span> <span class="n">tsp</span> <span class="k">for</span> <span class="n">ishp</span><span class="p">,</span> <span class="n">tshp</span><span class="p">,</span> <span class="n">tsp</span>
+                      <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">img_shape</span><span class="p">,</span> <span class="n">tile_shape</span><span class="p">,</span> <span class="n">tile_spacing</span><span class="p">)]</span>
+
+  <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+      <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+      <span class="c"># Create an output numpy ndarray to store the image</span>
+      <span class="k">if</span> <span class="n">output_pixel_vals</span><span class="p">:</span>
+          <span class="n">out_array</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">out_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;uint8&#39;</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+          <span class="n">out_array</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">out_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">out_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+      <span class="c">#colors default to 0, alpha defaults to 1 (opaque)</span>
+      <span class="k">if</span> <span class="n">output_pixel_vals</span><span class="p">:</span>
+          <span class="n">channel_defaults</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">]</span>
+      <span class="k">else</span><span class="p">:</span>
+          <span class="n">channel_defaults</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">]</span>
+
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+          <span class="k">if</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+              <span class="c"># if channel is None, fill it with zeros of the correct</span>
+              <span class="c"># dtype</span>
+              <span class="n">out_array</span><span class="p">[:,:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">out_shape</span><span class="p">,</span>
+                      <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;uint8&#39;</span> <span class="k">if</span> <span class="n">output_pixel_vals</span> <span class="k">else</span> <span class="n">out_array</span><span class="o">.</span><span class="n">dtype</span>
+                      <span class="p">)</span><span class="o">+</span><span class="n">channel_defaults</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+          <span class="k">else</span><span class="p">:</span>
+              <span class="c"># use a recurrent call to compute the channel and store it</span>
+              <span class="c"># in the output</span>
+              <span class="n">out_array</span><span class="p">[:,:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tile_raster_images</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">img_shape</span><span class="p">,</span> <span class="n">tile_shape</span><span class="p">,</span> <span class="n">tile_spacing</span><span class="p">,</span> <span class="n">scale_rows_to_unit_interval</span><span class="p">,</span> <span class="n">output_pixel_vals</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">out_array</span>
+
+  <span class="k">else</span><span class="p">:</span>
+      <span class="c"># if we are dealing with only one channel</span>
+      <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">img_shape</span>
+      <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span> <span class="o">=</span> <span class="n">tile_spacing</span>
+
+      <span class="c"># generate a matrix to store the output</span>
+      <span class="n">out_array</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">out_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s">&#39;uint8&#39;</span> <span class="k">if</span> <span class="n">output_pixel_vals</span> <span class="k">else</span> <span class="n">X</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+
+      <span class="k">for</span> <span class="n">tile_row</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">tile_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+          <span class="k">for</span> <span class="n">tile_col</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">tile_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+              <span class="k">if</span> <span class="n">tile_row</span> <span class="o">*</span> <span class="n">tile_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">tile_col</span> <span class="o">&lt;</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                  <span class="k">if</span> <span class="n">scale_rows_to_unit_interval</span><span class="p">:</span>
+                      <span class="c"># if we should scale values to be between 0 and 1</span>
+                      <span class="c"># do this by calling the `scale_to_unit_interval`</span>
+                      <span class="c"># function</span>
+                      <span class="n">this_img</span> <span class="o">=</span> <span class="n">scale_to_unit_interval</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">tile_row</span> <span class="o">*</span> <span class="n">tile_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">tile_col</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">img_shape</span><span class="p">))</span>
+                  <span class="k">else</span><span class="p">:</span>
+                      <span class="n">this_img</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">tile_row</span> <span class="o">*</span> <span class="n">tile_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">tile_col</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">img_shape</span><span class="p">)</span>
+                  <span class="c"># add the slice to the corresponding position in the</span>
+                  <span class="c"># output array</span>
+                  <span class="n">out_array</span><span class="p">[</span>
+                      <span class="n">tile_row</span> <span class="o">*</span> <span class="p">(</span><span class="n">H</span><span class="o">+</span><span class="n">Hs</span><span class="p">):</span><span class="n">tile_row</span><span class="o">*</span><span class="p">(</span><span class="n">H</span><span class="o">+</span><span class="n">Hs</span><span class="p">)</span><span class="o">+</span><span class="n">H</span><span class="p">,</span>
+                      <span class="n">tile_col</span> <span class="o">*</span> <span class="p">(</span><span class="n">W</span><span class="o">+</span><span class="n">Ws</span><span class="p">):</span><span class="n">tile_col</span><span class="o">*</span><span class="p">(</span><span class="n">W</span><span class="o">+</span><span class="n">Ws</span><span class="p">)</span><span class="o">+</span><span class="n">W</span>
+                      <span class="p">]</span> \
+                      <span class="o">=</span> <span class="n">this_img</span> <span class="o">*</span> <span class="p">(</span><span class="mi">255</span> <span class="k">if</span> <span class="n">output_pixel_vals</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">out_array</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="references.html" title="References"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="DBN.html" title="Deep Belief Networks"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

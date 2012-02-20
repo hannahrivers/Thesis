@@ -1,0 +1,3120 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Identifying Melanoma using Computer Vision and an Artificial Neural Network:
+ A Senior Thesis in Computer Science
+\end_layout
+
+\begin_layout Author
+Hannah Rivers
+\end_layout
+
+\begin_layout Date
+September 2011 -- April 2012
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace 3cm
+\end_inset
+
+
+\end_layout
+
+\begin_layout Abstract
+Proident craft beer whatever thundercats officia deserunt, chambray PBR.
+ Do tumblr proident deserunt, biodiesel jean shorts lomo officia quis dolore
+ hoodie.
+ Craft beer mixtape incididunt laborum, duis sapiente est photo booth et
+ irony.
+ Portland american apparel fap tattooed art party.
+ Freegan ea scenester cillum est, iphone skateboard ullamco keffiyeh.
+ Bicycle rights culpa whatever yr.
+ Yr quis dolore craft beer elit.
+\end_layout
+
+\begin_layout Abstract
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Abstract
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Abstract
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Thesis statement
+\end_layout
+
+\begin_layout Standard
+With the proper image acquisition and preprocessing techniques and selection
+ of classifiers, an artificial neural network can be created and trained
+ to distinguish between malignant melanoma, dysplastic nevi, and common
+ nevi.
+\end_layout
+
+\begin_layout Section
+Introduction to the problem
+\end_layout
+
+\begin_layout Subsection
+Importance of the problem
+\end_layout
+
+\begin_layout Enumerate
+Skin cancer is the most common form of cancer in the United States, and
+ melanoma is the most serious type of skin cancer.
+ [2] 
+\end_layout
+
+\begin_layout Enumerate
+The incidence of both non-melanoma and melanoma skin cancers has been increasing
+ over the past decades.
+ Currently, between two and three million non-melanoma skin cancers and
+ 132,000 melanoma skin cancers occur globally each year.
+ One in every three cancers diagnosed is a skin cancer and, according to
+ Skin Cancer Foundation Statistics, one in every five Americans will develop
+ skin cancer in their lifetime.
+ [3] 
+\end_layout
+
+\begin_layout Enumerate
+Melanoma can be cured if it is diagnosed and treated early.
+ If melanoma is not removed in its early stages, cancer cells may grow downward
+ from the skin surface and invade healthy tissue.
+ If it spreads to other parts of the body it can be difficult to control.
+ [2] 
+\end_layout
+
+\begin_layout Enumerate
+Dermatologists and doctors are expensive, and many cannot afford to consult
+ with them at every suspicion.
+ They are also not always accurate.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In general, the trend of modern medicine is creating machines to do tasks
+ humans used to, with greater accuracy in less time and for less capital.
+ This application is the first step down that road.
+\end_layout
+
+\begin_layout Enumerate
+Disclaimer: The intent of this application is to serve as a guide to indicate
+ the likelihood of melanoma.
+ It is a primary recognition tool; it is not meant to be used as a diagnostic
+ tool or as a replacement for a doctor.
+ 
+\end_layout
+
+\begin_layout Subsection
+Background information on human classification of melanoma
+\end_layout
+
+\begin_layout Enumerate
+What are the steps that go into classifying a melanoma? 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "key-11"
+
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The most commonly accepted heuristic is the ABCDE rule.
+ Meeting one or more of these criteria may indicate the presence of a melanoma.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Asymmetry; the shape of one half does not match the other 
+\end_layout
+
+\begin_layout Enumerate
+Border; the edges are ragged, blurred, or irregular 
+\end_layout
+
+\begin_layout Enumerate
+Color; the color is uneven and may include shades of black, brown, or tan
+ 
+\end_layout
+
+\begin_layout Enumerate
+Diameter; it's larger than a pencil eraser 
+\end_layout
+
+\begin_layout Enumerate
+Evolution; it changes in size, color spreads to surrounding skin, a new
+ bump or nodule appears, there's any pain, itchiness, bleeding, oozing,
+ or general irritation
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Doctors recommend monthly self-examinations to look for skin lesions fitting
+ the ABCDE rule.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Familiarize yourself with your moles so you can notice any changes.
+ Use a hand-held mirror to inspect hard-to-see areas.
+ Don't forget your scalp, groin, fingernails, soles, and the area between
+ your toes.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+If you find a suspicious mole, consult your dermatologist or physician.
+ If they feel that it's possibly a melanoma, they will likely biopsy it
+ and send it to a pathologist who will determine whether or not it's cancerous.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+There are 3 types of biopsies:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Punch biopsy: A tool with a circular blade is used to remove a round piece
+ of skin containing the suspicious mole.
+\end_layout
+
+\begin_layout Enumerate
+Excisional biopsy: The entire mole is surgically removed.
+\end_layout
+
+\begin_layout Enumerate
+Incisional biopsy: Only the most irregular part of a mole or growth is removed
+ for laboratory analysis.
+ 
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+If you are diagnosed with melanoma, the next step is to determine the severity
+ of the condition.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Melanoma is staged between I and IV, where a stage I melanoma is small with
+ a very successful treatment rate and a stage IV melanoma has spread to
+ other organs and recovery is highly unlikely.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Stages are assigned by:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Determining the thickness through examination under a microscope.
+ In general, the thicker the tumor, the more serious the disease.
+\end_layout
+
+\begin_layout Enumerate
+Determining whether the melanoma has spread to nearby lymph nodes through
+ a sentinel node biopsy.
+ In this procedure, dye is injected into the area where the melanoma was
+ removed and flows to lymph nodes.
+ The first ones to collect dye are removed and tested for cancer cells.
+ If cancer cells are not present in the closest lymph nodes, chances are
+ that the melanoma has not spread.
+ 
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+How generally accurate are doctors? 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The differentiation of early melanoma from other pigmented skin lesions
+ is not trivial even for experienced dermatologists; in several cases, primary
+ care physicians seem to underestimate melanoma in its early stage.
+ [1] 
+\end_layout
+
+\begin_layout Enumerate
+However, a larger issue is the patient failing to notice and consult a doctor
+ in time.
+\end_layout
+
+\begin_layout Enumerate
+Usually, if the patient brings the lesion to the doctor's attention early,
+ melanoma can be identified and treated.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Past approaches in the field of machine learning
+\end_layout
+
+\begin_layout Enumerate
+Overview of machine learning approach
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+First, the machine must be able to acquire pertinent data from images.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The selection of what constitutes pertinent data as well as the method of
+ acquisition varies.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Next, the data must be processed in such a way that analysis of results
+ yields a classification of either melanoma or dysplastic nevus.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The method of processing and analysis varies.
+\end_layout
+
+\begin_layout Enumerate
+In machine learning, the processing is done through a series of adaptive
+ algorithms that allow the computer to evolve its behaviors based on relationshi
+ps and patterns in the data.
+ This allows more intelligent decision making than a static algorithm.
+ 
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Main design components [1]
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Image acquisition
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+What type of images are going to be input by users? These are the type of
+ images you want to train on.
+\end_layout
+
+\begin_layout Enumerate
+Where can you get this image set?
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Feature selection/extraction
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Success of image recognition depends on correct selection of features for
+ classification.
+\end_layout
+
+\begin_layout Enumerate
+They must be measurable, with high sensitivity (high correlation and probability
+ of positive response) and high specificity (high probability of a true
+ negative response).
+ 
+\end_layout
+
+\begin_layout Enumerate
+Different diagnostic methods (ABCDE rule, pattern analysis, Menzies method,
+ 7-point checklist, texture analysis) are outlined under selection of classifier
+s.
+\end_layout
+
+\begin_layout Enumerate
+Once you have selected these features, you need to figure out how to extract
+ them from the image.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Image processing/analysis
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Now that you have extracted the key features, you must determine the method
+ through which to process them.
+ Each of the diagnostic methods mentioned above include a set of features
+ to extract, and rules through which to process them from data to information.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It's a typical optimization problem, resolved with heuristic strategies,
+ greedy or genetic algorithms, other computational intelligence methods,
+ or strategies from statistical pattern recognition.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In my case, I'm choosing to resolve it with an ANN.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Classification methodology
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+You must now take the information generated above and decide for which threshold
+s it should be classified into different categories, as well as which categories
+ to use.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Image acquisition techniques [1]
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+High budget
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Ideally, you may use epiluminence microscopy (ELM), which is the examination
+ of skin lesions with a dermatoscope.
+ This process consists of a magnifier, typically x10, a non-polarized light
+ source, a transparent plate, and a liquid medium between the instrument
+ and the skin, which allows detailed inspection of skin lesions unobstructed
+ by reflections on the skin's surface.
+ It is used to render the epidermis translucent, making the dermal features
+ clearly visible.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Transmission electron microscopy (TEM) is another microscopy technique that
+ reveals the structure of elastic networks in the dermis.
+ A beam of electrons is transmitted through an ultra-thin specimen, which
+ it interacts with as it passes through.
+ From this interaction an image is formed; that image is magnified and focused
+ onto a fluorescent screen on a layer of photographic film.
+\end_layout
+
+\begin_layout Enumerate
+Computed tomography (CT) scans use digital geometry processing to generate
+ a three-dimensional image of the inside of an object from a large series
+ of two-dimensional X-ray images taken around a single axis of rotation.
+\end_layout
+
+\begin_layout Enumerate
+Positron emission tomography (PET) scans employing fluorodeoxyglucose (FDG)
+ are a nuclear medicine imaging technique that produces an image of functional
+ processes in the body.
+ Gamma ray pairs are emitted indirectly by a positron-emitting radionuclide
+ (tracer) and detected by the system, then introduced into the body on a
+ biologically active molecule.
+ Computer analysis of tracer concentrations within the body are used to
+ construct a three-dimensional image.
+\end_layout
+
+\begin_layout Enumerate
+Multi-frequency electrical impedance tomography can create an image of a
+ lesion by recording and analyzing the resistance with which electric waves
+ of different frequencies move through it.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Low budget
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+High-resolution, low-distortion cameras are the most readily available,
+ however they don't account for color constancy, and it's difficult to get
+ a large, centered, focused, and detailed image of the lesion.
+\end_layout
+
+\begin_layout Enumerate
+Instead, video cameras are commonly used that can be controlled and parameterize
+d online in real time for a more three-dimensional and detailed image.
+ Another benefit of viewing the lesion from different angles is that it's
+ easier to account for color constancy.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Boosted Haar features [4]
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Haar-like features are digital image features used in the field of object
+ recognition, named for their intuitive similarity to the Haar wavelet.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Wavelets are sets of non-linear bases used to project a function.
+ The Haar wavelet is the simplest possible wavelet, which can be transformed
+ into any other wave.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/haarwavelet.png
+	lyxscale 25
+	scale 35
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+A Haar-like feature categorizes an image into subsections based on the differenc
+e between summed pixel intensities in adjacent rectangular regions at a
+ specific location in a detection window.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+For instance, in the facial recognition problem, Haar wavelets are used
+ to distinguish eyes, which are commonly shadowed, from cheeks, which are
+ commonly the lightest part of the face.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+The key advantage of a Haar-like feature over most other features is its
+ calculation speed.
+ If a summed area table (also known as an integrated image) is used, a Haar-like
+ feature of any size can be calculated in constant time.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+A summed area table is a quick and efficient algorithm to sum values in
+ a rectangular subset of a grid.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+As shown in the paper:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+A 2D decomposition of the image with 
+\begin_inset Formula $n^{2}$
+\end_inset
+
+ pixels yields 
+\begin_inset Formula $n^{2}$
+\end_inset
+
+ wavelet coefficients corresponding to a distinct Haar wavelet.
+\end_layout
+
+\begin_layout Enumerate
+Looks at 4 edge features, 8 line, and 2 center-surround features.
+\begin_inset Newline linebreak
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/boosted haar features.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Different algorithms utilize Haar-like features, such as the Viola-Jones
+ object detection framework.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The Viola-Jones object detection framework, proposed in 2001 for the facial
+ recognition problem, was the first to provide competitive object detection
+ rates in real time.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It is implemented in OpenCV as cvHaarDetectObjects().
+ 
+\end_layout
+
+\begin_layout Enumerate
+In the detection phase, a target sized window is passed over the input image,
+ and for each subsection of the image the pixel intensities are summed,
+ thus calculating the Haar-like feature.
+ The difference is then compared against a learned threshold that distinguishes
+ objects from non-objects.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Due to its simplicity, a Haar-like feature is only a weak learner or classifier;
+ its detection quality is only slightly better than random guessing.
+ Therefore either a large number of Haar-like features or a boosting algorithm
+ to strengthen the best ones are necessary to describe an object with sufficient
+ accuracy.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Boosting Algorithms
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Boosting is a machine learning meta-algorithm used with supervised learning
+ to turn a set of weak learners into a single strong learner.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Meta-algorithms are iterative optimization algorithms that try to improve
+ a candidate solution (a member of the set of all feasible solutions to
+ the given problem), with regard to a given measure of quality.
+\end_layout
+
+\begin_layout Enumerate
+Weak learners are classifiers that perform slightly better than random guessing,
+ while strong learners are strongly correlated with the true classification.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In the paper [4], Haar-like features are used in conjunction with the AdaBoost
+ boosting algorithm to increase their detection power.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+AdaBoost stands for adaptive boosting.
+\end_layout
+
+\begin_layout Enumerate
+The AdaBoost algorithm predisposes subsequent classifiers built in favor
+ of instances misclassified by previous classifiers.
+ In each round, it generates and calls a new weak classifier, updating the
+ distribution of weights to indicate the importance of examples in the data
+ set for the classification by increasing the weights of incorrectly classified
+ examples and decreasing that of correctly classified ones so that the new
+ classifier focuses on the former.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In the paper, each image category is trained separately, then the weights
+ and weak classifiers are stored.
+\end_layout
+
+\begin_layout Enumerate
+Next, the AdaBoost algorithm takes several weak classifiers given by Haar-like
+ features and develops them into stronger models after a number of iterations,
+ then the highly selective features that minimize the classification error
+ are extracted.
+\begin_inset Newline linebreak
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/adaboost algorithm.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+The AdaBoost algorithm was the first successful boosting algorithm.
+ Since then, LPBoost, TotalBoost, BrownBoost, MadaBoost, LogitBoost, and
+ more have had success as well.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Some of these have built-in implementations in OpenCV.
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Gabor Filter
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+A Gabor filter is a linear filter used for edge detection in image processing.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The filter has a real and an imaginary component representing orthogonal
+ directions.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Like Haar wavelets, the Gabor filters are self-similar; all filters can
+ be generated by dilation and rotation of one basic wavelet
+\end_layout
+
+\begin_layout Enumerate
+Gabor filters are similar to the human visual system in their representations
+ of frequency and orientation.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+In fact, simple cells in mammalian visual cortexes can be modeled by Gabor
+ functions.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Their strength lies in texture representation and discrimination rather
+ than object recognition.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+This is useful for the problem of skin lesion classification, as abnormal
+ texture can be an indication of melanoma.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Open-source libraries for Gabor wavelet feature extractions exist, however
+ all seem to be targeted at facial recognition.
+\end_layout
+
+\end_deeper
+\begin_layout Section
+Theory of neural computation
+\end_layout
+
+\begin_layout Subsection
+An introduction to neurocomputing [5]
+\end_layout
+
+\begin_layout Enumerate
+Things we need to know to understand neurocomputing:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Enough neuroscience to understand why the models make certain approximations,
+ and in which fields these approximations are more and less accurate.
+\end_layout
+
+\begin_layout Enumerate
+Enough fundamental math and coding to understand the systems used.
+\end_layout
+
+\begin_layout Enumerate
+Enough cognitive science to have some idea about what the brain is supposed
+ to do, and how it does it.
+ Our brains are not all-purpose computers, they are powerful at some tasks
+ and weak at others.
+ Their power comes from:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+enormous relative size
+\end_layout
+
+\begin_layout Enumerate
+effective biological preprocessing
+\end_layout
+
+\begin_layout Enumerate
+use of memory in place of computing power
+\end_layout
+
+\begin_layout Enumerate
+efficiency with small number of operations
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Finally, for all of this, we must assume that it's possible to make meaningful
+ simplifications of some aspects of the nervous system.
+ Some would argue that neurobiology is intrinsically too complicated to
+ simplify, or that we don't know enough about its workings to make correct
+ generalizations, which may be actually true.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+What is neurocomputing?
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+It's most basically defined as brain-like computation; while there are many
+ ways to organize a computing system, neurocomputing is an attempt to build
+ computers that are designed like the brain, in hopes of emulating it.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Brains have strengths and weaknesses, just like any other approach to computing.
+ 
+\end_layout
+
+\begin_layout Enumerate
+They're good at pattern recognition, motor control, perception, flexible
+ inference, intuition, and good guessing, however they are slow, imprecise,
+ make erroneous generalizations, are prejudiced, and are usually incapable
+ of explaining their actions.
+ All of these properties, desirable or not, may be typical of neurocomputing.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Biology is the practical science of what you can do with the resources available
+ to you, not the theoretical ideal.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Because of this, biological neural nets are a wealth of information in the
+ practical engineering and economic sense as well as the computational sense.
+ They provide an example of optimizing over available resources in a manner
+ desirable to emulate.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Subsection
+Biological Neural Networks [5]
+\end_layout
+
+\begin_layout Enumerate
+Biological neural networks are populations of interconnected neurons whose
+ inputs or signalling targets define a recognizable circuit.
+ They are the structure through which our brains process informtion.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Our brains have ~100 billion neurons.
+\end_layout
+
+\begin_layout Enumerate
+Neurons are made up on the input end of dendrites, which branch out in a
+ tree-like manner from the cell body, also known as the soma.
+ Extending from the cell body is a long, thin projection known as the axon,
+ the transmission line of the neuron.
+ The axon can give rise to collateral branches, forming a vast, interconnected
+ network.
+ When axons reach their final destination, they branch again into the structure
+ known as the terminal arborization.
+ At the ends of the terminal arborization are synapses, comprising the output
+ end of the neuron.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Dendrites receive inputs from other cells, the soma processes the inputs
+ then transmits information along the axon to the synapses, whose outputs
+ are received by other neurons via neurotransmitters diffused across the
+ synaptic cleft.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Each neuron is connected to thousands of other neurons which communicate
+ through electrochemical signals.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Each neuron continuously receives signals from these other neurons and then
+ sums up the inputs according to some process.
+ 
+\end_layout
+
+\begin_layout Enumerate
+If the end result is greater than some threshold value, the neuron fires
+ by generating a voltage, known as an action potentional, that transmits
+ down the axon to the terminal arborization.
+ This response is an all-or-nothing binary; there either is action potential
+ or there is not.
+\end_layout
+
+\begin_layout Enumerate
+After firing, a neuron has both an absolute and a relative refractory period
+ during which it cannot fire again.
+ For the former, there is no action threshold nor subsequent possibility
+ of firing, but for the latter, the threshold is merely elevated.
+ This relative refractory period, also known as synaptic resistance, is
+ adaptable, which can cause modified or 
+\begin_inset Quotes eld
+\end_inset
+
+learned
+\begin_inset Quotes erd
+\end_inset
+
+ behavior of the neuron in which firing frequency will drop if a stimulus
+ is maintained.
+ These varying, modifiable resistances cause detailed interactions among
+ the web of neurons that are the key to the nature of computation that neural
+ networks perform.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Hebb's Learning Rule: If the input of a neuron is repeatedly and persistently
+ causing the neuron to fire, a metabolic change happens in the synapse of
+ that particular input to reduce its resistance.
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+In the brain, functions are performed collectively and in parallel rather
+ than there being a clear delineation of subtasks to which various neurons
+ are assigned.
+ This is a fundamental distinguishing property of artificial neural nets.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Biological ground rules:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+No new neurons can be created.
+\end_layout
+
+\begin_layout Enumerate
+Neurons must earn their existence or die.
+ They are metabolically expensive, and thus biological pressure dictates
+ that as few as possible must be used.
+ 
+\end_layout
+
+\begin_layout Enumerate
+We have roughly 100 billion neurons at start.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Artificial Neural Networks [5]
+\end_layout
+
+\begin_layout Enumerate
+It's a mathematical or computational model that either abstracts or is inspired
+ by the structure and/or functional aspects of biological neural networks.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Neurons are represented as nodes, and synapses as weighted connections between
+ nodes.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Nodes recieve input, apply some sort of summation function, then output
+ according to the input's comparison against a threshold.
+\end_layout
+
+\begin_layout Enumerate
+The nodes and connections form a network that learns by modifying the weights
+ of the connections so that eventually a certain input yields a certain
+ output; the network can perform some function.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+It's a network of simple processing elements (artificial neurons/nodes)
+ that exhibits complex global behavior determined by adaptive weighted connectio
+ns between processing elements and element parameters.
+ The modifying algorithm changes the structure of the network based on external
+ or internal information during the learning phase to produce a desired
+ signal flow.
+ 
+\end_layout
+
+\begin_layout Enumerate
+There are some ways in which the biological model can be improved by technology
+ after using it as a template, since computers are not constrained to biological
+ pressures
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+For instance, we are capable of creating and maintaining as many neurons
+ as we need (however most successful ANNs to date use on the order of hundreds
+ or thousands of nodes rather than 100 billion).
+\end_layout
+
+\begin_layout Enumerate
+Computers are also never innacurate or fatigued, and can perform operations
+ very fast.
+ This does not mean that an artificial neural network can't be wrong or
+ slow, but that each individual step comprising the process won't be.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+In modern software implementations of artificial neural networks, the approach
+ inspired by biology has been largely abandoned for a more practical approach
+ based on statistics and signal processing.
+ Instead, components of neural networks are used as part of a larger system
+ with both adaptive and non-adaptive elements.
+\end_layout
+
+\begin_layout Subsection
+Types of problems artificial neural nets are best suited for
+\end_layout
+
+\begin_layout Enumerate
+They are usually used to model complex relationships between inputs and
+ outputs or to find patterns in data.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+No Free Lunch
+\begin_inset Quotes erd
+\end_inset
+
+ theorem [6]
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The 
+\begin_inset Quotes eld
+\end_inset
+
+No Free Lunch
+\begin_inset Quotes erd
+\end_inset
+
+ theorem states that all optimization algorithms are equivalent when their
+ performance is averaged across the entire possible problem set.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Since we know that not all optimization algorithms perform equally well
+ on every problem, we can infer that each optimization algorithm performs
+ better on some problems than on others.
+ 
+\end_layout
+
+\begin_layout Enumerate
+There can be no globally optimal algorithm for solving optimization problems
+ because on average, performance comes out to be the same.
+\end_layout
+
+\begin_layout Enumerate
+Therefore, each algorithm has strengths and weaknesses, and individual problems
+ have algorithms that will work better on them than others.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Practical applications for artificial neural networks have been slow in
+ presenting themselves.
+ In computers, hardware largely determines the software that runs efficiently
+ on it.
+ While a computer is always a programmable electronic device that can perform
+ binary arithmetic and logic functions, much more goes into our modern devices.
+ Computers able to adapt and learn have only been in existence for the last
+ decade or so, since they must be able to handle behavioral change, changes
+ in [figurative] internal wiring, and potential instability.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+This problem can be thought of in the same way as the fact that we and chimpanze
+es differ.
+ While 99% of our DNA is the same, the 1% difference is predominantly in
+ structural genes which modify sizes and shapes of structures.
+ While we contain no radical new hardware over chimps, rearrangements, inflation
+s, contractions, and other modifications of the same physical structure
+ has made our brains capable of considerably more computational power and
+ flexibility.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+It is important not to lose sight of the evolutionary perspective when consideri
+ng neural networks.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Neural networks, like brains, cannot compute everything, but only arrive
+ at reasonable solutions for a small but useful set of problems.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The practical applications of neural nets are the same problems selective
+ pressure has caused animals to biologically adapt to solve: association,
+ classification, categorization, generalization, rapid response, and quick
+ inference from inadequate data.
+ 
+\end_layout
+
+\begin_layout Enumerate
+A brain-like computing device is not a wonder computer capable of solving
+ all problems.
+ Its performance is highly problem and detail specific.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+The utility of the artificial neural network models lies in the fact that
+ they can be used to infer and use a function from a set of observations,
+ particularly in applications where the complexity of the data or task makes
+ the design of such functions by hand impractical.
+\end_layout
+
+\begin_layout Enumerate
+The most successful applications of neural nets to date are:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+function approximation, or regression analysis, including time series prediction
+ and modeling
+\end_layout
+
+\begin_layout Enumerate
+classification, including pattern and sequence recognition, novelty detection
+ and sequential decision making 
+\end_layout
+
+\begin_layout Enumerate
+data processing, including filtering, clustering, blind signal separation
+ and compression
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Why an ANN is a good fit for this problem
+\end_layout
+
+\begin_layout Enumerate
+Medical diagnosis falls under the theme of classification through pattern
+ recognition.
+\end_layout
+
+\begin_layout Section
+Types of Neural Networks
+\end_layout
+
+\begin_layout Subsection
+Necessary concepts
+\end_layout
+
+\begin_layout Enumerate
+To understand the difference between various types of neural nets, you first
+ must be familiar with several concepts.
+\end_layout
+
+\begin_layout Enumerate
+Supervised v.
+ unsupervised learning
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+For all neural nets, a training set of data is necessary to teach the network
+ the necessary connections for desired flow.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Usually, we know the appropriate output for the given data set, and can
+ use that information to calculate then minimize the discrepancy between
+ the actual and ideal output.
+ Using that knowledge to appropriately modify and train the network is called
+ supervised learning.
+\end_layout
+
+\begin_layout Enumerate
+Sometimes, we don't know the appropriate output, and instead need the system
+ to take the input data and somehow organize it in an appropriate way.
+ Methods to suit these needs are much more difficult to construct and use,
+ however can be very rewarding.
+ These methods utilize unsupervised learning.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Gradient descent
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+It's a first-order optimization algorithm.
+ 
+\end_layout
+
+\begin_layout Enumerate
+To find a local minimum of a function using gradient descent, one takes
+ steps proportional to the negative of the gradient (approximate or exact)
+ of the function at the current point.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Notice that gradient descent does not necessarily converge to the absolute
+ minimum.
+ The minimum it converges on is based on the starting values.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/gradient_descent.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Gradient descent is based on the observation that if the multivariable function
+ 
+\begin_inset Formula $ $
+\end_inset
+
+
+\begin_inset Formula $F(\mathbf{x})$
+\end_inset
+
+ is defined and differentiable in a neighborhood of a point 
+\begin_inset Formula $a$
+\end_inset
+
+, then F(x) decreases fastest if one moves from 
+\begin_inset Formula $a$
+\end_inset
+
+ in the direction of the negative gradient of F at 
+\begin_inset Formula $a$
+\end_inset
+
+, 
+\begin_inset Formula $-\nabla F(\mathbf{a})$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It follows that, if 
+\begin_inset Formula $\mathbf{b}=\mathbf{a}-\gamma\nabla F(\mathbf{a})$
+\end_inset
+
+ for step size γ > 0 a small enough number, then 
+\begin_inset Formula $F(\mathbf{a})\geq F(\mathbf{b})$
+\end_inset
+
+.
+ With this observation in mind, one starts with a guess 
+\begin_inset Formula $\mathbf{x}_{0}$
+\end_inset
+
+ for a local minimum of F, and considers the sequence 
+\begin_inset Formula $\mathbf{x}_{0},\mathbf{x}_{1},\mathbf{x}_{2},\dots$
+\end_inset
+
+ such that 
+\begin_inset Formula $\mathbf{x}_{n+1}=\mathbf{x}_{n}-\gamma_{n}\nabla F(\mathbf{x}_{n}),\ n\ge0$
+\end_inset
+
+ (note that the value of the step size γ is allowed to change at every iteration
+).
+\end_layout
+
+\begin_layout Enumerate
+We have 
+\begin_inset Formula $F(\mathbf{x}_{0})\ge F(\mathbf{x}_{1})\ge F(\mathbf{x}_{2})\ge\cdots$
+\end_inset
+
+, so the sequence 
+\begin_inset Formula $(\mathbf{x}_{n})$
+\end_inset
+
+ converges to a local minimum.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Bayesian probability [12]
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+In general, probability is viewed in the 
+\emph on
+classical
+\emph default
+ or 
+\emph on
+frequentist
+\emph default
+ interpretation, where it is defined in terms of the frequencies of random,
+ repeatable events.
+ However, in 
+\emph on
+Bayesian
+\emph default
+ probability, probability provides a quantification of uncertainty, or a
+ measure of a state of knowledge.
+ It's an extension of logic that enables reasoning with uncertain statements.
+ To evaluate the probability of a hypothesis, the person specifies some
+ prior probability which is updated in light of new relevant data.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+For instance, we speak of the probability of events such as the earth being
+ destroyed or a person dying.
+ These are not repeatable events from which we can determine a probability
+ through frequencies.
+ However, they still have a likelihood of occurrence that we can educatedly
+ guess at through consideration of relevant evidence, such as the number
+ of asteroids that have come close or the person's consumption of carcinogens.
+ When we get new evidence, we can reassess our hypotheses.
+ Bayesian probability allows us to quantify these expressions of uncertainty.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In 1946, Cox showed that if we numerically quantify degrees of belief, then
+ a simple set of axioms encoding common sense properties of such beliefs
+ leads uniquely to a set of rules for manipulating degrees of belief that
+ are equivalent to the sum and product rules of classical probability.
+ (paraphrase) In 2003, Jaynes used this to prove that probability theory
+ could be regarded as an extension of Boolean logic to situations involving
+ uncertainty.
+ Over the years, many mathematicians have proposed various sets of axioms
+ that all have behaved precisely according to the rules of probability.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Bayes' theorem:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $p(w|D)=\frac{p(D|w)p(w)}{p(D)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $D$
+\end_inset
+
+ is the set of observed data, 
+\begin_inset Formula $w$
+\end_inset
+
+ is the event whose uncertainty we wish to numerically express.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It expresses the uncertainty of the event 
+\begin_inset Formula $w$
+\end_inset
+
+ depending on the set of observed data 
+\begin_inset Formula $D$
+\end_inset
+
+ as the product of the uncertainty of the evidence as a probability distribution
+ over 
+\begin_inset Formula $w$
+\end_inset
+
+ times the prior probability distribution of 
+\begin_inset Formula $w$
+\end_inset
+
+, scaled to make sure it integrates to one and is therefore a valid probability
+ density.
+\end_layout
+
+\begin_layout Enumerate
+i.e.
+ The posterior probability is proportional to the likelihood times the prior
+ probability distribution, where all of these quantities are viewed as functions
+ of 
+\begin_inset Formula $w$
+\end_inset
+
+.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+An advantage Bayesian probability holds over classical probability is that
+ the inclusion of prior knowledge arises naturally.
+ For instance, Bayesian probability won't assign a fair coin a 100% probability
+ of landing on tails if it does so three times of three.
+ However, the likelihood it assigns is highly dependent on the prior distributio
+n used.
+ Bayesian methods based on poor choices of prior distributions can yield
+ poor results with high confidence.
+\end_layout
+
+\begin_layout Enumerate
+Bayesian principles are largely used in pattern recognition and other machine
+ learning methods, as we can incorporate evidence as we progress.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+The Perceptron [5]
+\end_layout
+
+\begin_layout Enumerate
+The perceptron was the first influential model of a simple artificial neural
+ network, proposed by psychologist Frank Rosenblatt in 1958.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It is the simplest kind of feedforward neural network: it functions as a
+ linear classifier.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Feed-forward means that there are no cycles or loops, the connections only
+ move forward.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+The perceptron functions as a pattern classifier.
+ It is solely a linear discriminant model and works only when two patterns
+ are linearly separable (a hyperplane can be drawn between them).
+ The perceptron convergence theorem states that if there exists an exact
+ solution, the perceptron learning algorithm is guaranteed to learn the
+ classification it in a finite number of steps.
+ If however, there is not an exact solution and the training data is not
+ linearly separable, the algorithm will run indefinitely without converging.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+If necessary, include proof of the convergence of the perceptron learning
+ algorithm (p.
+ 220 in Anderson Intro to NN).
+\end_layout
+
+\begin_layout Enumerate
+The perceptron learning algorithm uses knowledge of past results to modify
+ the weights of the connections, thereby improving the performance of the
+ network.
+ 
+\end_layout
+
+\begin_layout Enumerate
+However, many interesting classifications are not linearly separable and
+ require a more complex decision surface to separate the classes.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+It has an input sensory layer called a retina, which is partially connected
+ to an association layer.
+ It is important theoretically that these layers are not fully connected;
+ this means that each unit in the association layer is computing a different
+ function of the image on the retina.
+ The association layer is then reciprocally connected to a response layer
+ by way of unidirectionally modifiable weighted 
+\begin_inset Quotes eld
+\end_inset
+
+synapses
+\begin_inset Quotes erd
+\end_inset
+
+ (in the direction of the response layer).
+ 
+\end_layout
+
+\begin_layout Enumerate
+The goal of the perceptron is the activation of a single appropriate unit
+ in the response layer for a certain set of inputs.
+ The activation of any appropriate unit is known as a candidate solution,
+ or a member of the set of possible solutions for a given problem.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The basic computing element of the perceptron is the 
+\emph on
+threshold logic unit
+\emph default
+, or TLU, comprised of 
+\begin_inset Formula $n$
+\end_inset
+
+ input weights with strengths 
+\begin_inset Formula $w[i]$
+\end_inset
+
+.
+ It sums the product of the input weights and their respective strengths
+ and nonlinearly transforms them into binary values indicating activation
+ if the scaled summed input is over a certain threshold.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The activation function is binary; either a correct unit is activated or
+ it is not.
+ There is no graded activation.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Although its learning capabilities are extremely limited, it proved to be
+ a valuable tool in prediction and explanation of human cognition.
+ Interestingly, its limitations that make it less effective as a computing
+ device are very similar to those of humans, and as such it was widely used
+ among psychologists and cognitive scientists to help form many theories
+ about the workings of the brain
+\end_layout
+
+\begin_layout Enumerate
+Along with the ADALINE (an early gradient descent algorithm using a non-binary
+ error function), the perceptron framed the network learning problem in
+ a way that was fundamentally accepted and unconsciously integrated into
+ scientific thought, shaping the evolution of computational science and
+ future network models for years.
+\end_layout
+
+\begin_layout Subsection
+Multi-Layer Perceptron (MLP)
+\end_layout
+
+\begin_layout Enumerate
+They are defined as a feed-forward artificial neural network model consisting
+ of multiple fully connected layers of nodes in a directed graph that maps
+ sets of input data onto a set of appropriate output.
+\end_layout
+
+\begin_layout Enumerate
+A trademark of multilayer perceptrons is that they do not have a connection
+ to biological neural networks like other types of ANNs.
+\end_layout
+
+\begin_layout Enumerate
+There's an input layer, an output layer, and at least one hidden layer.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Think of it as a set of nested functions.
+\end_layout
+
+\begin_layout Enumerate
+Fully connected means each node in one layer connects with a weight w
+\begin_inset Formula $_{ij}$
+\end_inset
+
+ to each node in the subsequent layer.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Multilayer perceptrons are comprised of multiple stages of processing, each
+ of which individually resembles the perceptron model.
+ The difference lies in the intermediate units' use of continuous sigmoidal
+ nonlinearities instead of step functions.
+ This type of processing means that the neural network function is differentiabl
+e with respect to the network parameters, a fact which plays a central role
+ in network training.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+If the hidden units used linear activation functions, the network could
+ be simplified to an input, association, and output layer, i.e.
+ a perceptron (because the composition of successive linear transformations
+ is itself a linear transformation).
+\end_layout
+
+\begin_layout Enumerate
+The intermediate units are referred to as 
+\begin_inset Quotes eld
+\end_inset
+
+hidden
+\begin_inset Quotes erd
+\end_inset
+
+ because their function is obscured from sight.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Each node of an MLP has a non-linear (sigmoidal) activation function meant
+ to model the frequency of action potentials of biological neurons instead
+ of the simplified binary function.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The two most common activation functions are the hyperbolic tangent function
+ 
+\begin_inset Formula $\Phi(y_{i})=\tanh(v_{i})$
+\end_inset
+
+ which ranges from 
+\begin_inset Formula $(-1,1)$
+\end_inset
+
+, and the logistic function 
+\begin_inset Formula $\Phi(y_{i})=(1+e^{-v_{i}})^{-1}$
+\end_inset
+
+ which ranges from 
+\begin_inset Formula $(0,1)$
+\end_inset
+
+, where 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ is the output of the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ node and 
+\begin_inset Formula $v_{i}$
+\end_inset
+
+ is the weighted sum of the input synapses.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+MLPs use backpropogation, a supervised learning technique, to train the
+ network.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Backpropogation is a generalization of the least mean squares algorithm
+ used by the linear perceptron.
+ It's an efficient technique for evaluating the gradient of an error function
+ for a feed-forward neural net, which is the first step in most training
+ algorithms.
+\end_layout
+
+\begin_layout Enumerate
+It's a local 
+\begin_inset Quotes eld
+\end_inset
+
+message passing
+\begin_inset Quotes erd
+\end_inset
+
+ scheme in which information is sent both forwards and backwards through
+ the network.
+\end_layout
+
+\begin_layout Enumerate
+It depends on the activation function being differentiable, a key feature
+ of MLPs.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Learning in the network occurs by modifying the connection weights by a
+ factor calculated through gradient descent after a piece of data is processed,
+ so that the change is based on the amount of error generated compared to
+ the expected result.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The first phase of training is propagation.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The training data is propagated forward through the network, generating
+ output activations by applying the selected sigmoidal function to the weighted
+ sum of the inputs.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The input vector 
+\begin_inset Formula $x_{n}$
+\end_inset
+
+ is applied to the network and propagated forward using 
+\begin_inset Formula $a_{j}=\sum_{i}w_{ji}z_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $z_{j}=h(a_{j})$
+\end_inset
+
+ where 
+\begin_inset Formula $z$
+\end_inset
+
+ is the activation, 
+\begin_inset Formula $w$
+\end_inset
+
+ is the weight, 
+\begin_inset Formula $h$
+\end_inset
+
+ is the nonlinear activation function, and 
+\begin_inset Formula $a$
+\end_inset
+
+ is the weighted sum of the inputs.
+\end_layout
+
+\begin_layout Enumerate
+The error 
+\begin_inset Formula $d_{k}$
+\end_inset
+
+ is then calculated for all the output units using 
+\begin_inset Formula $d_{k}=y_{k}-t_{k}$
+\end_inset
+
+ where 
+\begin_inset Formula $y$
+\end_inset
+
+ is the output (a linear combination of the input variables), and 
+\begin_inset Formula $t$
+\end_inset
+
+ is a value specified by the error function.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Then backward propagation of the output activations through the ANN occurs
+ using the target output vector as a starting point.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The algorithm backpropogates using 
+\begin_inset Formula $d_{j}=h'(a_{j})\sum_{k}w_{kj}d_{k}$
+\end_inset
+
+ to obtain the error for each hidden unit in the network.
+ The value of 
+\begin_inset Formula $d$
+\end_inset
+
+ for a particular hidden unit can be obtained by propagating the previous
+ values of 
+\begin_inset Formula $d$
+\end_inset
+
+ backwards from units higher up in the network.
+ Because we already know the error values for the output units, we can evaluate
+ them for all of the hidden units in a feed-forward network by recursively
+ applying the equation above.
+\end_layout
+
+\begin_layout Enumerate
+The equation 
+\begin_inset Formula $\frac{dE_{n}}{dw_{ij}}=d_{j}z_{i}$
+\end_inset
+
+ is used to evaluate the required derivatives where 
+\begin_inset Formula $E_{n}$
+\end_inset
+
+ is the summed error function, 
+\begin_inset Formula $w_{ij}$
+\end_inset
+
+ is the weight, 
+\begin_inset Formula $z_{i}$
+\end_inset
+
+ is the activation of unit 
+\begin_inset Formula $i$
+\end_inset
+
+ and 
+\begin_inset Formula $d_{j}$
+\end_inset
+
+ is the error.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+The second phase of training is weight update using the error values 
+\begin_inset Formula $d_{k}$
+\end_inset
+
+ calculated in phase one.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+For each weighted synapse you must: 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+first multiply 
+\begin_inset Formula $d_{k}$
+\end_inset
+
+ and the input activation to get the gradient of weight,
+\end_layout
+
+\begin_layout Enumerate
+the change the weight in the opposite direction of the gradient by subtracting
+ a ratio of it from the weight.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Phases one and two are then repeated until the desired accuracy is achieved.
+ 
+\end_layout
+
+\begin_layout Enumerate
+There are practical limitations to the performance of MLPs such as requiring
+ inputs to be scaled and normalized, and slow convergence that is not guaranteed.
+ Because gradient descent may converge to any local minimum on the error
+ surface, the MLP may not reach the absolute minimum.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Despite these limitations, multilayer perceptrons using a backpropogation
+ algorithm are the standard algorithm for any supervised-learning pattern
+ recognition process .
+ 
+\end_layout
+
+\begin_layout Enumerate
+They are useful in research in terms of their ability to solve problems
+ stochastically, which often allows one to get approximate solutions for
+ extremely complex problems.
+\end_layout
+
+\begin_layout Subsection
+Deep Belief Networks (DBN) [8]
+\end_layout
+
+\begin_layout Enumerate
+Deep learning is a field of machine learning based on algorithms for learning
+ multiple levels of representation of data in order to model more complex
+ relationships.
+\end_layout
+
+\begin_layout Enumerate
+Features are arranged in a hierarchy known as a deep architecture, in which
+ higher-level features and concepts are defined in terms of lower ones.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Deep learning algorithms have proven to be skilled at feature extraction
+ in high-dimensional, structured data, and can implicitly learn the data's
+ distribution function.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Most of these algorithms are unsupervised, and thus are very useful at finding
+ patterns that humans might not arrive at due to prejudices or predilections.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Deep belief networks are probabilistic generative models whose structures
+ are composed of multiple layers of stochastic latent (deterministic and
+ present, although not visible) variables typically having binary values.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The top two layers have mutual undirected symmetric connections and form
+ an associative memory.
+\end_layout
+
+\begin_layout Enumerate
+The lower layers get top-down, directed connections from the layer above.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The states of the units in the lowest layer represent a data vector, as
+ in MLPs.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Typically, DBNs use a logistic function of the weighted input received from
+ above (or below) to determine the probability that a binary latent variable
+ has a value of 1 during top-down generation (or bottom-up inference), but
+ other types of variables can be used as long as the variables are in the
+ exponential family (so that log probability is linear in the parameters).
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+The two most significant properties of deep belief networks are:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+An efficient layer by layer procedure for learning top-down, generative
+ weights which determine how variables in a layer depend on the state of
+ the layer above, and
+\end_layout
+
+\begin_layout Enumerate
+after learning, the values of latent variables in every layer can be inferred
+ by a single bottom-up pass starting with the observed data vector and moving
+ backwards using the generative weights.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+This means that you can add a final layer of variables (composing the desired
+ output) and backpropogate the error derivatives, as in the MLP.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Backpropogation will work better if feature detectors in the hidden layers
+ are initialized by learning a deep belief network that models the structure
+ of the input data.
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+They're learned one layer at a time, using the values of the latent variables
+ in one layer as the training data for the next layer.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+It's a greedy algorithm, optimizing at each step for that step alone with
+ no foresight.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Very importantly, they can be combined with other learning procedures to
+ fine-tune the weights.
+ This makes them very useful tools for data representation.
+\end_layout
+
+\begin_layout Enumerate
+You can view a DBN as a composition of single learning modules, each of
+ which is a type of restricted Boltzmann machine with a layer of visible
+ units (representing data) and hidden units (representing features that
+ capture higher-order correlations), whose layers are connected by a matrix
+ of symmetrically weighted connections.
+ There are no connections within a layer.
+\end_layout
+
+\begin_layout Enumerate
+They can be represented by the function 
+\begin_inset Formula $p(v)=\sum_{h}p(h|W)p(v|h,W)$
+\end_inset
+
+ where 
+\begin_inset Formula $W$
+\end_inset
+
+ is matrix of weights, 
+\begin_inset Formula $v$
+\end_inset
+
+ is a vector of activities for the visible units, and 
+\begin_inset Formula $h$
+\end_inset
+
+ is a sample vector of hidden units.
+\end_layout
+
+\begin_layout Enumerate
+Deep belief networks are best at generating and recognizing images, video
+ sequences, and motion-capture data.
+\end_layout
+
+\begin_layout Section
+Considered and selected approaches
+\end_layout
+
+\begin_layout Subsection
+Questions of intent
+\end_layout
+
+\begin_layout Enumerate
+How am I going to approach this problem/what is my focus?
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+I could examine different algorithmic approaches and compare their performances
+ to learn more about algorithms and machine learning.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+This would be beneficial for my general knowledge of computer science, however
+ I prefer practical learning to theoretical, and programming to research.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Or I could focus on generating a finished, working product.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+This would be beneficial as a display of my abilities for future employment,
+ and would be much more interesting for me.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Student interest is the first predictor of success, faculty interest is
+ the second.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+I could write it from the ground up and use my thorough knowledge to write
+ a new library geared towards machine learning.
+ While this may be the best way to fully understand the intricacies of the
+ problem, creating a strongly associative network for data this complex
+ may be beyond the scope of an undergraduate thesis and take longer than
+ two semesters.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Alternatively, I could utilize software and libraries already available
+ by those who have successfully conquered aspects of the problem and piece
+ them together.
+ This would allow me to focus on making the most advanced product of my
+ ability.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Considering that this is a relevant problem and software in this field could
+ have real and useful applications, it is both more responsible and more
+ reasonable to follow this route.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In addition, there are very few instances in software development where
+ you do not make use of already available software.
+ Working this way will give me more experience in my future field and potential
+ employers will be more impressed by the best possible functionality than
+ by determination.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Therefore my final decision is to put full focus towards functionality and
+ marketability.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+What do I want the network to output?
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The purpose of the ANN I'm writing is to classify a skin lesion as either
+ melanoma or a dysplastic (or common) nevus.
+ The output of a neural network is always a binary classification, however
+ when I expand my network into an application, a binary classification may
+ not be prudent.
+ Due to the sensitive nature of the problem, it would be irresponsible for
+ an medically-focused amateur application to state a definitive conclusion
+ lest a user take it to be a diagnosis.
+ The best option is most likely a binary classification paired with some
+ sort of likelihood statistic.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+I am not yet sure of a usuable statistic, and since the application is outside
+ the bounds of my thesis requirements, I will research after my thesis'
+ conclusion.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Different algorithmic approaches
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+As I outlined previously, artificial neural networks function very well
+ on classification problems.
+\end_layout
+
+\begin_layout Enumerate
+However, other machine learning algorithms exist that are also capable of
+ classification.
+ These include quadratic classifiers, decision trees, Bayesian networks,
+ and hidden Markov models.
+ 
+\end_layout
+
+\begin_layout Enumerate
+If lacking length, later I can include a section on different machine learning
+ algorithms and their strengths and weaknesses.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Preprocessing techniques 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Before passing the image to the network, it must be processed into a form
+ of data that the network can recognize and learn from.
+ There are many methods through which this can be done.
+ 
+\end_layout
+
+\begin_layout Enumerate
+(this section will be expanded once I begin actually programming the image
+ recognition portion)
+\end_layout
+
+\begin_layout Enumerate
+Normalizing techniques
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The first problem is making sure the image is centered and scaled to an
+ appropriate (and ideally uniform) size and level of detail.
+ 
+\end_layout
+
+\begin_layout Enumerate
+At the same time, information about the diameter, lighting, and color must
+ be retained.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Most likely, data regarding values that change with normalization must be
+ calculated first, then the image cropped and magnified to facilitate feature
+ extraction.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+What data do I want to give the neural net?
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+While most neural network models run on numerical data, it is possible to
+ equip the input layer with a sort of virtual retina that can determine
+ features on its own.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It is a question of how much of the computation should be assigned to preprocess
+ing, and how much the network should do for itself.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+What type of input do I want to give the ANN?
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+There are various ways of representing the data extracted from the image
+ to the network.
+\end_layout
+
+\begin_layout Enumerate
+The most common is a binary vector where each input represents a feature.
+ However, this does not account for the variability of feature presentation
+ in the input images.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Although assigning these nuanced variables to a binary may diminish accuracy
+ for a small set of selective features, most of the methods I've considered
+ use a large set of selectors which reduces the amount of loss.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Also, binary responses are inherently characteristic of neural networks,
+ and they are excellent classifiers in spite of the apparent lack of nuance.
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Selection of classifiers [1]
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+See Practical limitations, Section 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "sub:Practical-Limitations"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+This is a description of the actual features each method extracts and in
+ some cases a description of how.
+\end_layout
+
+\begin_layout Enumerate
+ABCDE rule
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Asymmetry is decided by bisecting the lesion with 2 optimally assigned axes,
+ overlapping the two halves along the axes, then dividing the non-overlapping
+ areas by the total area .
+\end_layout
+
+\begin_layout Enumerate
+The border is examined by creating regions of interest (ROI) by dividing
+ the lesion into pie pieces (a process known as image segmenting).
+ Then you can see whether there is a sharp cutoff or a gradual fade at the
+ periphery based on thresholding, region growing, and color transformation,
+ or by using a classical edge detection algorithm.
+\end_layout
+
+\begin_layout Enumerate
+Color is determined by counting the number of colors present (light/dark
+ brown, black, red, white, slate blue), the color texture, variance in RGB
+ values, saturation, hue, Y-Luminance, UV chrominance components, averaging
+ over pie-shaped image segments, or the minimum/maximum/average/standard
+ deviation of channel values' color intensity.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Differential stuctures are examined assigning points based on the number
+ of structural components present, such as a pigment network, 3+ dots, 2+
+ globules, >10% structureless areas, and 3+ streaks.
+\end_layout
+
+\begin_layout Enumerate
+Evolution cannot be calculated based on a single image; either a series
+ of images are needed or the data must be provided alongside the image.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Pattern analysis
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The goal of pattern analysis is to identify specific patterns present in
+ the lesion.
+ These patterns include both global and local structures.
+\end_layout
+
+\begin_layout Enumerate
+Examples of global patterns include reticular, globular, cobblestone, homogenous
+, starburst, parallel, multi-component, or nonspecific designs over the
+ whole of the lesion.
+\end_layout
+
+\begin_layout Enumerate
+Examples of local patterns include pigment changes, networking, dots/globules/mo
+les, streaks, a blue-whitish veil, regression structures, hypo-pigmentation,
+ blotches, or vascular structures in specific areas of the lesion.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Menzies' method
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Menzies' method is a simple equation, 
+\begin_inset Formula $M=p-n$
+\end_inset
+
+ where 
+\begin_inset Formula $p$
+\end_inset
+
+ stands for the number of positive features and 
+\begin_inset Formula $n$
+\end_inset
+
+ for the number of negative.
+ The lower the score, the less chance of melanoma.
+\end_layout
+
+\begin_layout Enumerate
+The negative features consist of symmetry and a single even color.
+\end_layout
+
+\begin_layout Enumerate
+The positive features consist of a blue-whitish veil, brown dots, pseudopods,
+ radical steaming, scar-like depigmentation, peripheral black dots/globules,
+ 5-6 colors, blue/grey dots, and a broadened network.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+7-point checklist
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+In this method, seven differently weighted criteria assess chromatic characteris
+tics, shape, and texture then generates a score.
+ If that score is three or greater, the lesion is classified as malignant.
+ The criteria are: 
+\end_layout
+
+\begin_layout Enumerate
+1-- atypical pigment network 
+\end_layout
+
+\begin_layout Enumerate
+2-- blue-white veil 
+\end_layout
+
+\begin_layout Enumerate
+3-- atypical vascular pattern 
+\end_layout
+
+\begin_layout Enumerate
+4-- irregular streaks 
+\end_layout
+
+\begin_layout Enumerate
+5-- irregular dots/globules 
+\end_layout
+
+\begin_layout Enumerate
+6-- irregular blotches 
+\end_layout
+
+\begin_layout Enumerate
+7-- regression structures
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Software considered
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+This problem breaks down into the two subproblems of preprocessing and classific
+ation.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Preprocessing requires computer vision algorithms, and classification requires
+ machine learning algorithms.
+\end_layout
+
+\begin_layout Enumerate
+So, to begin I searched for different computer vision and machine learning
+ libraries, suites, and frameworks.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+OpenCV
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Open Source Computer Vision Library 
+\end_layout
+
+\begin_layout Enumerate
+Library of programming functions mainly aimed at real time computer vision
+ and image processing, developed by Intel and now supported by Willow Garage.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Includes a statistical machine learning library.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Has a Python wrapper.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Supported by Mac OSX 
+\end_layout
+
+\begin_layout Enumerate
+Has official releases; is well-established.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+PyCVF
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Python Computer Vision Framework 
+\end_layout
+
+\begin_layout Enumerate
+Takes in library, dependencies, toolkits, then uniformizes concepts to make
+ applications that use and extend the framework.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Can use OpenCV and Orange.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Has its own concepts: database, models, nodes (processing units), machine
+ learning models, datatypes, structures, and experiments.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Has its own datatypes: images (3d numpy array), video, audio, vectors, and
+ vector sets.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+PyVision
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Object-oriented Computer Vision Toolkit that allows rapid prototyping and
+ analysis of computer vision algorithms.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Provides simple framework to unify scipy/numpy, OpenCV, and other computer
+ vision and machine learning software packages.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Has a set of analysis tools.
+\end_layout
+
+\begin_layout Enumerate
+Mainly used for facial recognition, but open to additions.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Someone's Ph.D.
+ project.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+PyCV
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+INACTIVE-- relies on old versions of scipy, numpy, and OpenCV.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Package of C++ and Python modules implementing various algorithms that are
+ useful in computer vision.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Augments the capabilities of OpenCV.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Python interface to OpenCV.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Fast training and selection of Haar-like features, and variants of AdaBoost
+ boosting algorithm.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Once again, focuses on facial recognition.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Once again, someone's Ph.D.
+ project.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Pynopticon
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Toolbox that allows you to create and train your own object recognition
+ classifiers.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Create a dataset of your favorite image categories, choose some feature
+ extraction methods, post-processing, and a classifier to train, it does
+ the rest.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Integrates with Orange for a GUI.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Couldn't get Orange to recognize it in the past.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Orange
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Component-based data mining and machine learning software suite.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Visual programming front-end for explorative data analysis and visualization,
+ and Python bindings and libraries for scripting.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Includes comprehensive set of components for data preprocessing, feature
+ scoring and filtering, modeling, model evaluation, and exploration techniques.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Has a Python interface for developing new algorithms and procedures.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Large toolbox.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Flexible, powerful, well-established.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Theano
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+J.
+ Bergstra, O.
+ Breuleux, F.
+ Bastien, P.
+ Lamblin, R.
+ Pascanu, G.
+ Desjardins, J.
+ Turian, D.
+ Warde-Farley and Y.
+ Bengio.
+ “Theano: A CPU and GPU Math Expression Compiler”.
+ Proceedings of the Python for Scientific Computing Conference (SciPy) 2010.
+ June 30 - July 3, Austin, TX (BibTeX) 
+\end_layout
+
+\begin_layout Enumerate
+Python library that allows you to define, optimize, and evaluate mathematical
+ expressions involving multi-dimensional arrays efficiently.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Combines aspects of a computer algebra system (CAS) with aspects of an optimizin
+g compiler, which is particularly useful for tasks in which complicated
+ mathematical expressions are evaluated repeatedly and evaluation speed
+ is critical.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It has optimized symbolic features such as automatic differentiation, graph
+ merging, simplification, using memory aliasing to avoid redundant calculation,
+ and more.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Theano was written at the LISA lab to support rapid development of efficient
+ machine learning algorithms.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It's named after the Greek mathematician, who may have been Pythagoras’
+ wife.
+ 
+\end_layout
+
+\begin_layout Enumerate
+It's released under a BSD license
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Subsection
+Practical Limitations
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Practical-Limitations"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Image acquisition techniques
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Since I already have a set of training data, image acquisition techniques
+ are solely an issue for the practical post-thesis application of my work.
+ These are the issues that compromise the accuracy of my network's classificatio
+n.
+\end_layout
+
+\begin_layout Enumerate
+Camera quality is the main issue I'll be facing with the application.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Not only are the majority of input images going to come from low-quality
+ personal cameras (point-and-shoot or camera phones), but my network was
+ trained on medical-quality images which makes the disparity even higher.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Commercially available cameras work poorly for lesions less than 0.5 cm in
+ diameter, which is a relatively large lesion to begin with.
+ The magnification is simply not enough to get a properly detailed image
+ smaller than that.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+there won't be enough detail for proper edge or feature detection.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+One possible fix is to include a user questionnaire regarding the ABCDE
+ of the lesion, then to use the reported information alongside what the
+ camera can pick up.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+However, this will take more code and really should be used with a network
+ properly trained to incorporate the data.
+\end_layout
+
+\begin_layout Enumerate
+It would be simple to run the data through my program and create such a
+ network, however in that case I would need a training data set of this
+ type with known outcomes.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Lighting is the second largest issue.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Colors are only true under natural white light.
+ In any other light, our perception of color distorts.
+ Proper color identification is an important aspect of classification.
+ 
+\end_layout
+
+\begin_layout Enumerate
+I have no control over the lighting in user-input images.
+\end_layout
+
+\begin_layout Enumerate
+Several possible fixes for this problem include:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Having the user take pictures in multiple different lightings (florescent,
+ sunlight), or the brightest lighting possible.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Having a built-in detector that rejects pictures that are too poorly lit.
+\end_layout
+
+\begin_layout Enumerate
+Placing a color bar on the side of the application screen and having the
+ user report the actual color, and then including an algorithm to adjust
+ the image appropriately.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+The most feasible solution to both of these problems creates a new problem
+ compromising accuracy: user error.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+There is no solution but to trust the user and make the questionnaire as
+ fool-proof as possible.
+\end_layout
+
+\begin_layout Enumerate
+The actual best way to counteract this is to include user error in the training
+ set, however generating or collecting a data set with that is not feasible.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Software
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Due to time constraints and a single programmer, I must use software already
+ written rather than customized.
+\end_layout
+
+\begin_layout Enumerate
+Due to limited funding, no professional software can be used, only freeware.
+\end_layout
+
+\begin_layout Enumerate
+Some very promising libraries are now inactive due to conflicting retrograde
+ dependencies with host programs.
+\end_layout
+
+\begin_layout Enumerate
+Also, the software I use must have a wrapper in language I am familiar with
+ (preferably Python).
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Selected Approaches
+\end_layout
+
+\begin_layout Enumerate
+This section will be written after programming.
+\end_layout
+
+\begin_layout Section
+Final product
+\end_layout
+
+\begin_layout Subsection
+Structure of ANN
+\end_layout
+
+\begin_layout Subsection
+Marked-up code
+\end_layout
+
+\begin_layout Subsection
+Results with benchmarks
+\end_layout
+
+\begin_layout Section
+Future (or current) plans/applications
+\end_layout
+
+\begin_layout Subsection
+Phone app
+\end_layout
+
+\begin_layout Enumerate
+Development process
+\end_layout
+
+\begin_layout Subsection
+Web app
+\end_layout
+
+\begin_layout Enumerate
+Development process
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-1"
+
+\end_inset
+
+Overview of Advanced CV Systems for Skin Lesions Characterization
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-2"
+
+\end_inset
+
+http://www.nlm.nih.gov/medlineplus/skincancer.html
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-3"
+
+\end_inset
+
+http://www.who.int/uv/faq/skincancer/en/index1.html
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-4"
+
+\end_inset
+
+Retrieval and Ranking of Biomedical Images using Boosted Haar Features
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-5"
+
+\end_inset
+
+“An Introduction to Neural Networks,” Anderson
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-6"
+
+\end_inset
+
+http://www.no-free-lunch.org/
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-7"
+
+\end_inset
+
+http://www.deeplearning.net/ 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-8"
+
+\end_inset
+
+Geoffrey E.
+ Hinton (2009), Scholarpedia, 4(5):5947.
+ doi:10.4249/scholarpedia.5947
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-9"
+
+\end_inset
+
+http://www.ai-junkie.com/ann/evolved/nnt1.html
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "key-10"
+
+\end_inset
+
+http://ulcar.uml.edu/~iag/CS/Intro-to-ANN.html
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "11"
+key "key-11"
+
+\end_inset
+
+http://www.mayoclinic.com/health/melanoma/DS00439/DSECTION=tests-and-diagnosis
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "12"
+key "key-12"
+
+\end_inset
+
+Pattern Recognition and Machine Learning --Bishop
+\end_layout
+
+\end_body
+\end_document

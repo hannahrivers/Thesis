@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Deep Learning &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Deep Learning</a><ul>
+<li><a class="reference external" href="#deep-coding">Deep Coding</a></li>
+</ul>
+</li>
+</ul>
+
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/deep.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="deep-learning">
+<span id="deep"></span><h1>Deep Learning<a class="headerlink" href="#deep-learning" title="Permalink to this headline">¶</a></h1>
+<p>The breakthrough to effective training strategies for deep architectures came in
+2006 with the algorithms for training deep belief networks
+(DBN) <a class="reference external" href="references.html#hinton07">[Hinton07]</a> and stacked auto-encoders <a class="reference external" href="references.html#ranzato07">[Ranzato07]</a> , <a class="reference external" href="references.html#bengio07">[Bengio07]</a> .
+All these methods are based on a similar approach: <strong>greedy layer-wise unsupervised
+pre-training</strong> followed by <strong>supervised fine-tuning</strong>.</p>
+<p>The pretraining strategy consists in using unsupervised learning to guide the
+training of intermediate levels of representation. Each layer is pre-trained
+with an unsupervised learning algorithm, which attempts to learn a nonlinear
+transformation of its input, in order to captures its main variations.  Higher
+levels of abstractions are created by feeding the output of one layer, to the
+input of the subsequent layer.</p>
+<p>The resulting an architecture can then be seen in two lights:</p>
+<ul class="simple">
+<li>the pre-trained deep network can be used to initialize the weights of all, but
+the last layer of a deep neural network. The weights are then further adapted
+to a supervised task (such as classification) through traditional gradient
+descent (see <a class="reference external" href="mlp.html#mlp"><em>Multilayer perceptron</em></a>). This is referred to as the
+fine-tuning step.</li>
+<li>the pre-trained deep network can also serve solely as a feature extractor. The
+output of the last layer is fed to a classifier, such as logistic regression,
+which is trained independently. Better results can be obtained by
+concatenating the output of the last layer, with the hidden representations of
+all intermediate layers <a class="reference external" href="references.html#lee09">[Lee09]</a>.</li>
+</ul>
+<p>For the purposes of this tutorial, we will focus on the first interpretation,
+as that is what was first proposed in <a class="reference external" href="references.html#hinton06">[Hinton06]</a>.</p>
+<div class="section" id="deep-coding">
+<h2>Deep Coding<a class="headerlink" href="#deep-coding" title="Permalink to this headline">¶</a></h2>
+<p>Since Deep Belief Networks (DBN) and Stacked Denoising-AutoEncoders (SDA) share
+much of the same architecture and have very similar training algorithms (in
+terms of pretraining and fine-tuning stages), it makes sense to implement them
+in a similar fashion, as part of a &#8220;Deep Learning&#8221; framework.</p>
+<p>We thus define a generic interface, which both of these architectures will
+share.</p>
+<div class="highlight-python"><pre>class DeepLayerwiseModel(object):
+
+    def layerwise_pretrain(self, layer_fns, pretrain_amounts):
+        """
+        """
+
+    def finetune(self, datasets, lr, batch_size):
+        """
+
+class DBN(DeepLayerwiseModel):
+    """
+    """
+
+class StackedDAA(DeepLayerwiseModel):
+    """
+    """</pre>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">deep_main</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">pretraining_epochs</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+        <span class="n">pretrain_lr</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">training_epochs</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+        <span class="n">mnist_file</span><span class="o">=</span><span class="s">&#39;mnist.pkl.gz&#39;</span><span class="p">):</span>
+
+    <span class="n">n_train_examples</span><span class="p">,</span> <span class="n">train_valid_test</span> <span class="o">=</span> <span class="n">load_mnist</span><span class="p">(</span><span class="n">mnist_file</span><span class="p">)</span>
+
+    <span class="c"># instantiate model</span>
+    <span class="n">deep_model</span> <span class="o">=</span> <span class="o">...</span>
+
+    <span class="c">####</span>
+    <span class="c">#### Phase 1: Pre-training</span>
+    <span class="c">####</span>
+
+    <span class="c"># create an array of functions, which will be used for the greedy</span>
+    <span class="c"># layer-wise unsupervised training procedure</span>
+
+    <span class="n">pretrain_functions</span> <span class="o">=</span> <span class="n">deep_model</span><span class="o">.</span><span class="n">pretrain_functions</span><span class="p">(</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">train_set_x</span><span class="o">=</span><span class="n">train_set_x</span><span class="p">,</span>
+            <span class="n">learning_rate</span><span class="o">=</span><span class="n">pretrain_lr</span><span class="p">,</span>
+            <span class="o">...</span>
+            <span class="p">)</span>
+
+    <span class="c"># loop over all the layers in our network</span>
+    <span class="k">for</span> <span class="n">layer_idx</span><span class="p">,</span> <span class="n">pretrain_fn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pretrain_functions</span><span class="p">):</span>
+
+        <span class="c"># iterate over a certain number of epochs)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">pretraining_epochs</span> <span class="o">*</span> <span class="n">n_train_examples</span> <span class="o">/</span> <span class="n">batch_size</span><span class="p">):</span>
+
+            <span class="c"># follow one step in the gradient of the unsupervised cost</span>
+            <span class="c"># function, at the given layer</span>
+            <span class="n">layer_fn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">####</span>
+<span class="c">#### Phase 2: Fine Tuning</span>
+<span class="c">####</span>
+
+<span class="c"># create theano functions for fine-tuning, as well as</span>
+<span class="c"># validation and testing our model.</span>
+
+<span class="n">train_fn</span><span class="p">,</span> <span class="n">valid_scores</span><span class="p">,</span> <span class="n">test_scores</span> <span class="o">=</span>\
+    <span class="n">deep_model</span><span class="o">.</span><span class="n">finetune_functions</span><span class="p">(</span>
+        <span class="n">train_valid_test</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>         <span class="c"># training dataset</span>
+        <span class="n">learning_rate</span><span class="o">=</span><span class="n">finetune_lr</span><span class="p">,</span>      <span class="c"># the learning rate</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span><span class="p">)</span>        <span class="c"># number of examples to use at once</span>
+
+
+<span class="c"># use these functions as part of the generic early-stopping procedure</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">patience_max</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">patience</span><span class="p">:</span>
+        <span class="k">break</span>
+
+    <span class="n">cost_i</span> <span class="o">=</span> <span class="n">train_fn</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

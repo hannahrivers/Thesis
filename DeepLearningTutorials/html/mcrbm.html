@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Restricted Boltzmann Machines (RBM) &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Restricted Boltzmann Machines (RBM)</a><ul>
+<li><a class="reference external" href="#notation">Notation</a></li>
+<li><a class="reference external" href="#energy-functions">Energy Functions</a><ul>
+<li><a class="reference external" href="#covariance-energy">Covariance Energy</a></li>
+<li><a class="reference external" href="#mean-energy">Mean Energy</a></li>
+<li><a class="reference external" href="#conditionals">Conditionals: <img class="math" src="_images/math/93ada97d0f8ade4705043af65d19f3d6ce46a6f2.png" alt="p(\h^m | \v)"/></a></li>
+<li><a class="reference external" href="#id1">Conditionals: <img class="math" src="_images/math/af983343a05313f3838e41b79b8fd0f3353d37de.png" alt="p(\h^c | \v)"/></a></li>
+<li><a class="reference external" href="#id2">Conditionals: <img class="math" src="_images/math/c4327971fe53ab2f0f62daa15d0991b7eb33b399.png" alt="p(\v | \h^c,\h^m)"/></a></li>
+<li><a class="reference external" href="#free-energy">Free-Energy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/mcrbm.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="restricted-boltzmann-machines-rbm">
+<span id="rbm"></span><h1>Restricted Boltzmann Machines (RBM)<a class="headerlink" href="#restricted-boltzmann-machines-rbm" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="notation">
+<h2>Notation<a class="headerlink" href="#notation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><img class="math" src="_images/math/58c0725384a9bc7028663dd0fac353a12034e45f.png" alt="\v \in \mathbb{R}^{D\times 1}"/>: D Gaussian visible units</li>
+<li><img class="math" src="_images/math/29faff8dc20585b5c67d318a3a14819f9123d889.png" alt="\h^c \in \{0,1\}^{N\times 1}"/>: N covariance-hidden units</li>
+<li><img class="math" src="_images/math/0080ce1aa106cd98704cada390c77cc010824c43.png" alt="\P \in \mathbb{R}^{F\times N}"/>: weight matrix connecting N covariance-hidden units to F factors</li>
+<li><img class="math" src="_images/math/ac6b14ff4282ee5736870efa69539643114a12b7.png" alt="\C \in \mathbb{R}^{D\times F}"/>: weight matrix connecting F factors to D visible units</li>
+<li><img class="math" src="_images/math/bd7577e80d4cbcac50be89e0a7b29bf42ccf6b4e.png" alt="\b^c \in \mathbb{R}^{N\times 1}"/>: biases of N covariance-hidden units</li>
+<li><img class="math" src="_images/math/704bbac73a24441bc695104be1522e4dd95d9957.png" alt="\h^m \in \{0,1\}^{M\times 1}"/>: M mean-hidden units</li>
+<li><img class="math" src="_images/math/ebf87ad48bf07c6860163b54b879492ae7d4ee82.png" alt="\W \in \mathbb{R}^{D\times M}"/>: weight matrix connecting M mean-hidden units to D visible units</li>
+<li><img class="math" src="_images/math/82787de2954cef40a4beacf95cad22430421cadd.png" alt="\b^m \in \mathbb{R}^{M\times 1}"/>: biases of M mean-hidden units</li>
+</ul>
+</div>
+<div class="section" id="energy-functions">
+<h2>Energy Functions<a class="headerlink" href="#energy-functions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="covariance-energy">
+<h3>Covariance Energy<a class="headerlink" href="#covariance-energy" title="Permalink to this headline">¶</a></h3>
+<div class="math" id="equation-cov_energy">
+<p><span class="eqno">(1)</span><img src="_images/math/0821267dd8af3618747a934d76c6ca6875dde5ed.png" alt="\E^c(\v,\h^c) = -\frac{1}{2}
+                \sum_{f=1}^F \sum_{k=1}^N P_{fk} h_k^c (\sum_{i=1}^D C_{if} v_i)^2 -
+                \sum_{k=1}^N b_k^c h_k^c" /></p>
+</div></div>
+<div class="section" id="mean-energy">
+<h3>Mean Energy<a class="headerlink" href="#mean-energy" title="Permalink to this headline">¶</a></h3>
+<div class="math" id="equation-mean_energy">
+<p><span class="eqno">(2)</span><img src="_images/math/ed5e3117ad221a6dbbac7f6caa66d6364aae109d.png" alt="\E^m(\v,\h^m) = - \sum_{j=1}^M \sum_{i=1}^D W_{ij} h_j^m v_i
+                - \sum_{j=1}^M b_j^m h_j^m" /></p>
+</div></div>
+<div class="section" id="conditionals">
+<h3>Conditionals: <img class="math" src="_images/math/93ada97d0f8ade4705043af65d19f3d6ce46a6f2.png" alt="p(\h^m | \v)"/><a class="headerlink" href="#conditionals" title="Permalink to this headline">¶</a></h3>
+<p>This is the same derivation as with standard RBMs. We start with the observation
+that the mean-hidden units are conditionally-independent given the visible
+units, hence <img class="math" src="_images/math/4b518582b33ffc5cad9a045a436f0704c52ab800.png" alt="p(\h^m | \v) = \prod_{j=1}^M p(\h_j^m | \v)"/>.</p>
+<p>We can then derive <img class="math" src="_images/math/6b877621a60b2d03b8ac438966ad891be7db7025.png" alt="p(\h_j^m | \v)"/> as follows:</p>
+<div class="math">
+<p><img src="_images/math/6f4963aa38a351dbff5d777acca49b8be32ea993.png" alt="p(\h_j^m | \v)
+&amp;= \frac {p(\h_j^m, \v)} {p(\v)} \nonumber \\
+&amp;= \frac {p(\h_j^m, \v)} {\sum_{h_j^m} p(\h_j^m, \v)} \nonumber \\
+&amp;= \frac
+{\exp(\sum_{i=1}^D W_{ij} h_j^m v_i + b_j^m h_j^m)}
+{\sum_{h_j} \exp(\sum_{i=1}^D W_{ij} h_j^m v_i + b_j^m h_j^m)} \nonumber \\
+&amp;= \frac
+{\exp(\sum_{i=1}^D W_{ij} h_j^m v_i + b_j^m h_j^m)}
+{1 + \exp(\sum_{i=1}^D W_{ij} v_i + b_j^m)} \nonumber" /></p>
+</div><p>The activation probability of a mean-hidden unit, <img class="math" src="_images/math/50afd1957e7b6967ec25d0e9983fe13f30f108a4.png" alt="p(\h_j^m=1 |\v)"/>, is thus:</p>
+<div class="math">
+<p><img src="_images/math/19f7ca1a6bf899a3ae558bd589a3647b53f8cf23.png" alt="p(\h_j^m=1 |\v) &amp;= \sigma(\sum_{i=1}^D W_{ij} v_i + b_j^m) \nonumber" /></p>
+</div></div>
+<div class="section" id="id1">
+<h3>Conditionals: <img class="math" src="_images/math/af983343a05313f3838e41b79b8fd0f3353d37de.png" alt="p(\h^c | \v)"/><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>It is straightforward to show that the covariance-hidden units are also
+conditionally independent. This is due to the fact that <img class="math" src="_images/math/5c690717bef9de16f0e40840ea24a33a7292e2a8.png" alt="\E^c(\v,\h^c)"/> is
+linear in <img class="math" src="_images/math/29e6251ca0be20f118c4b5c3f3e4f23343243125.png" alt="\h^c"/>, thus:</p>
+<div class="math">
+<p><img src="_images/math/2320953d4e36b98a4453e4e1bb52427f3967a487.png" alt="p(\h^c, \v)
+&amp;= \frac{1}{Z} \exp(-\E^c(\v,\h^c) \nonumber \\
+&amp;= \frac{1}{Z} \exp(\frac{1}{2} \sum_{f=1}^F \sum_{k=1}^N P_{fk} h_k^c (\sum_{i=1}^D C_{if} v_i)^2 +
+                \sum_{k=1}^N b_k^c h_k^c) \nonumber \\
+&amp;= \frac{1}{Z} \prod_{k=1}^N \exp(\frac{1}{2} \sum_{f=1}^F P_{fk} h_k^c (\sum_{i=1}^D C_{if} v_i)^2 + b_k^c h_k^c) \nonumber \\
+&amp;= \frac{1}{Z} \prod_{k=1}^N p(\h_k^c, \v) \nonumber" /></p>
+</div><p>The rest of the derivation is equivalent to ref{sec:hm_given_v}, substituting
+<img class="math" src="_images/math/001cd4e938550c69b564186b2d88a4342d580054.png" alt="\E^m(\v,\h^m)"/> for <img class="math" src="_images/math/5c690717bef9de16f0e40840ea24a33a7292e2a8.png" alt="\E^c(\v,\h^c)"/>. This yields:</p>
+<div class="math">
+<p><img src="_images/math/3c61666d0888843a41d32293a2dd2d2738a7a7e3.png" alt="p(\h_k^c=1 |\v) &amp;= \sigma(\frac{1}{2} \sum_{f=1}^F P_{fk} (\sum_{i=1}^D
+C_{if} v_i)^2 + b_k^c) \nonumber" /></p>
+</div></div>
+<div class="section" id="id2">
+<h3>Conditionals: <img class="math" src="_images/math/c4327971fe53ab2f0f62daa15d0991b7eb33b399.png" alt="p(\v | \h^c,\h^m)"/><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>From basic probability, we can write:</p>
+<div class="math">
+<p><img src="_images/math/84b6a4e01b4f050ec84a4b2cef9837e1cfb4abb5.png" alt="p(\v | \h^c, \h^m) &amp;= \frac {p(\v,\h)} {p(\h)} \nonumber \\
+&amp;= \frac{1}{p(\h)} \frac{1}{Z} \exp(
+   \frac{1}{2} \sum_{f=1}^F \sum_{k=1}^N P_{fk} h_k^c (\sum_{i=1}^D C_{if} v_i)^2 + \sum_{k=1}^N b_k^c h_k^c +
+   \sum_{j=1}^M \sum_{i=1}^D W_{ij} h_j^m v_i + \sum_{j=1}^M b_j^m h_j^m) \nonumber \\
+   &amp;= \frac{1}{Z_2} \exp( \frac{1}{2} \v^T(\C \text{diag}(\P\h^c) \C^T)\v + {\b^c}^T\h^c + \v^T\W\h^m + {\b^m}^T\h^m) \nonumber" /></p>
+</div><p>Setting <img class="math" src="_images/math/d58c44c8a942c16b16c3fe37262bf39f72f425bd.png" alt="\Sigma^{-1} = - \C\text{diag}(P\h^c)\C^T"/>, we can now write:</p>
+<div class="math">
+<p><img src="_images/math/884a70f3ba9ae37ab591d2ad9f789569c19125fc.png" alt="p(\v | \h^c, \h^m) &amp;=
+\frac{1}{Z_2} \exp(-\frac{1}{2} \v^T\Sigma^{-1}\v + {\b^c}^T\h^c + \v^T\W\h^m + {\b^m}^T\h^m) \nonumber \\
+&amp;= \frac{1}{Z_2} \exp(-\frac{1}{2} \v^T\Sigma^{-1}\v + \v\W\h^m) \exp({\b^c}^T\h^c + {\b^m}^T\h^m) \nonumber \\
+&amp;= \frac{1}{Z_3} \exp(-\frac{1}{2} \v^T\Sigma^{-1}\v + \v\W\h^m) \nonumber" /></p>
+</div><p>Since we know that <img class="math" src="_images/math/02b162f01a6c8291c24d434473f926d3304ffce0.png" alt="\v"/> are Gaussian random variables, we need to get
+the above in the form <img class="math" src="_images/math/e7fa1d05fef2b28de9f29ce84c5b1649648c3adf.png" alt="\frac{1}{Z} \exp(-\frac{1}{2} (\v-\mu)^T
+\Sigma^{-1} (\v-\mu))"/>. We can do this by completing the squares and then
+solving for <img class="math" src="_images/math/2d8c833ed800824727cd7bd2fb9de1a12ad7e674.png" alt="\mu"/> in the cross-term, which gives
+<img class="math" src="_images/math/b7c4eadc4d111ce078f672d7bb1573b7cc92ecc0.png" alt="\v^T \Sigma^{-1} \mu = \v \W \h^m"/>, and <img class="math" src="_images/math/02b2c2a759be4888ea4e6ba0b30c50306edde3db.png" alt="\mu = \Sigma \W \h^m"/>.</p>
+<p>Our conditional distribution can thus be written as:</p>
+<div class="math">
+<p><img src="_images/math/08d83911108e1026d3f6266e32f5ed176673b785.png" alt="p(\v | \h^c, \h^m) &amp;= \mathcal{N}(\Sigma \W \h^m, \Sigma) \nonumber \\
+\text{ with } \Sigma^{-1} &amp;= - \C\text{diag}(P\h^c)\C^T \nonumber" /></p>
+</div></div>
+<div class="section" id="free-energy">
+<h3>Free-Energy<a class="headerlink" href="#free-energy" title="Permalink to this headline">¶</a></h3>
+<p>By definition, the free-energy <img class="math" src="_images/math/e5ca5ace8d7ba035398579d65ef97e494fef1b33.png" alt="\F(\v)"/> of a given visible configuration <img class="math" src="_images/math/02b162f01a6c8291c24d434473f926d3304ffce0.png" alt="\v"/>
+is: <img class="math" src="_images/math/c9dcc798d591392115d72d55b18ce781c5c4aa04.png" alt="\F(v) = -\log \sum_h e^{-\E(\v,\h)}"/>. We can derive the free-energy for
+the mcRBM as follows:</p>
+<div class="math">
+<p><img src="_images/math/b88914d45e980b290b03af7c262846d1ec30f315.png" alt="\F(\v) = &amp;-\log \sum_{h^c} \sum_{h^m} \exp(-\E^c(\v,\h^c) - \E^m(\v,\h^m)) \nonumber \\
+= &amp;-\log \sum_{h^c} \sum_{h^m} \left[ \prod_{k=1}^N \exp(-\E^c(\v,\h_k^c))
+                               \prod_{j=1}^M \exp(-\E^m(\v,\h_j^m)) \right] \nonumber \\
+= &amp;-\log \left[ \prod_{k=1}^N (1 + \exp(-\E^c(\v,\h_k^c=1)))
+                \prod_{j=1}^M (1 + \exp(-\E^m(\v,\h_j^m=1))) \right]\nonumber \\
+= &amp;-\sum_{k=1}^N \log(1 + \exp(-\E^c(\v,\h_k^c=1)))
+  -\sum_{j=1}^M \log(1 + \exp(-\E^m(\v,\h_j^m=1))) \nonumber \\
+= &amp;-\sum_{k=1}^N \log(1 + \exp(\frac{1}{2} \sum_{f=1}^F P_{fk} (\sum_{i=1}^D C_{if} v_i)^2 + b_k^c)) \nonumber \\
+  &amp;-\sum_{j=1}^M \log(1 + \exp(\sum_{i=1}^D W_{ij} v_i + b_j^m)) \nonumber" /></p>
+</div></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

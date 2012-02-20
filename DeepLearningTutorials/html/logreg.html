@@ -1,0 +1,839 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Classifying MNIST digits using Logistic Regression &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Multilayer Perceptron" href="mlp.html" />
+    <link rel="prev" title="Getting Started" href="gettingstarted.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="mlp.html" title="Multilayer Perceptron"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gettingstarted.html" title="Getting Started"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Classifying MNIST digits using Logistic Regression</a><ul>
+<li><a class="reference external" href="#the-model">The Model</a></li>
+<li><a class="reference external" href="#defining-a-loss-function">Defining a Loss Function</a></li>
+<li><a class="reference external" href="#creating-a-logisticregression-class">Creating a LogisticRegression class</a></li>
+<li><a class="reference external" href="#learning-the-model">Learning the Model</a></li>
+<li><a class="reference external" href="#testing-the-model">Testing the model</a></li>
+<li><a class="reference external" href="#putting-it-all-together">Putting it All Together</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="gettingstarted.html"
+                                  title="previous chapter">Getting Started</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="mlp.html"
+                                  title="next chapter">Multilayer Perceptron</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/logreg.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="classifying-mnist-digits-using-logistic-regression">
+<span id="logreg"></span><span id="index-15"></span><h1>Classifying MNIST digits using Logistic Regression<a class="headerlink" href="#classifying-mnist-digits-using-logistic-regression" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This sections assumes familiarity with the following Theano
+concepts: <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-shared-variables">shared variables</a> , <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/adding.html#adding-two-scalars">basic arithmetic ops</a> , <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#computing-gradients">T.grad</a> ,
+<a class="reference external" href="http://deeplearning.net/software/theano/library/config.html#config.floatX">floatX</a>. If you intend to run the code on GPU also read <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/using_gpu.html">GPU</a>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/logistic_sgd.py">here</a>.</p>
+</div>
+<p>In this section, we show how Theano can be used to implement the most basic
+classifier: the logistic regression. We start off with a quick primer of the
+model, which serves both as a refresher but also to anchor the notation and
+show how mathematical expressions are mapped onto Theano graphs.</p>
+<p>In the deepest of machine learning traditions, this tutorial will tackle the exciting
+problem of MNIST digit classification.</p>
+<div class="section" id="the-model">
+<h2>The Model<a class="headerlink" href="#the-model" title="Permalink to this headline">¶</a></h2>
+<p>Logistic regression is a probabilistic, linear classifier. It is parametrized
+by a weight matrix <img class="math" src="_images/math/10cb764f88509fb1c8012366993fdbee98f31bc5.png" alt="W"/> and a bias vector <img class="math" src="_images/math/8136a7ef6a03334a7246df9097e5bcc31ba33fd2.png" alt="b"/>. Classification is
+done by projecting data points onto a set of hyperplanes, the distance to
+which reflects a class membership probability.</p>
+<p>Mathematically, this can be written as:</p>
+<div class="math">
+<p><img src="_images/math/153607569519042043611bdcc228d05900b6bd25.png" alt="P(Y=i|x, W,b) &amp;= softmax_i(W x + b) \\
+              &amp;= \frac {e^{W_i x + b_i}} {\sum_j e^{W_j x + b_j}}" /></p>
+</div><p>The output of the model or prediction is then done by taking the argmax of the vector whose i&#8217;th element is P(Y=i|x).</p>
+<div class="math">
+<p><img src="_images/math/a0b647561b3064e9cdfbee730c6a89bf844461a4.png" alt="y_{pred} = {\rm argmax}_i P(Y=i|x,W,b)" /></p>
+</div><p>The code to do this in Theano is the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># generate symbolic variables for input (x and y represent a</span>
+<span class="c"># minibatch)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">fmatrix</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lvector</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+
+<span class="c"># allocate shared variables model params</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">10</span><span class="p">,)),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">784</span><span class="p">,</span><span class="mi">10</span><span class="p">)),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">)</span>
+
+<span class="c"># symbolic expression for computing the vector of</span>
+<span class="c"># class-membership probabilities</span>
+<span class="n">p_y_given_x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">W</span><span class="p">)</span><span class="o">+</span><span class="n">b</span><span class="p">)</span>
+
+<span class="c"># compiled Theano function that returns the vector of class-membership</span>
+<span class="c"># probabilities</span>
+<span class="n">get_p_y_given_x</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">p_y_given_x</span><span class="p">)</span>
+
+<span class="c"># print the probability of some example represented by x_value</span>
+<span class="c"># x_value is not a symbolic variable but a numpy array describing the</span>
+<span class="c"># datapoint</span>
+<span class="k">print</span> <span class="s">&#39;Probability that x is of class </span><span class="si">%i</span><span class="s"> is </span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">get_p_y_given_x</span><span class="p">(</span><span class="n">x_value</span><span class="p">)[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="c"># symbolic description of how to compute prediction as class whose probability</span>
+<span class="c"># is maximal</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">p_y_given_x</span><span class="p">)</span>
+
+<span class="c"># compiled theano function that returns this value</span>
+<span class="n">classify</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We first start by allocating symbolic variables for the inputs <img class="math" src="_images/math/b6400c6fe3f1ed70e5afd387a9686cdc3fa09531.png" alt="x,y"/>.
+Since the parameters of the model must maintain a persistent state throughout
+training, we allocate shared variables for <img class="math" src="_images/math/c60548156d95f2a384781f35b90d0e705f42e34a.png" alt="W,b"/>.
+This declares them both as being symbolic Theano variables, but also
+initializes their contents. The dot and softmax operators are then used to compute the vector
+<img class="math" src="_images/math/795c6c9bd50ae379603c0acf7d88b61b3640a3e5.png" alt="P(Y|x, W,b)"/>. The resulting variable p_y_given_x is a symbolic variable
+of vector-type.</p>
+<p>Up to this point, we have only defined the graph of computations which Theano
+should perform. To get the actual numerical value of <img class="math" src="_images/math/795c6c9bd50ae379603c0acf7d88b61b3640a3e5.png" alt="P(Y|x, W,b)"/>, we
+must create a function <tt class="docutils literal"><span class="pre">get_p_y_given_x</span></tt>, which takes as input <tt class="docutils literal"><span class="pre">x</span></tt> and
+returns <tt class="docutils literal"><span class="pre">p_y_given_x</span></tt>. We can then index its return value with the
+index <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/> to get the membership probability of the <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/> th class.</p>
+<p>Now let&#8217;s finish building the Theano graph. To get the actual model
+prediction, we can use the <tt class="docutils literal"><span class="pre">T.argmax</span></tt> operator, which will return the index at
+which <tt class="docutils literal"><span class="pre">p_y_given_x</span></tt> is maximal (i.e. the class with maximum probability).</p>
+<p>Again, to calculate the actual prediction for a given input, we construct a
+function <tt class="docutils literal"><span class="pre">classify</span></tt>. This function takes as argument a batch of inputs x (as a matrix),
+and outputs a vector containing the predicted class for each example (row) in x.</p>
+<p>Now of course, the model we have defined so far does not do anything useful yet,
+since its parameters are still in their initial random state. The following
+section will thus cover how to learn the optimal parameters.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For a complete list of Theano ops, see: <a class="reference external" href="http://deeplearning.net/software/theano/library/tensor/basic.html#basic-tensor-functionality">list of ops</a></p>
+</div>
+</div>
+<div class="section" id="defining-a-loss-function">
+<h2>Defining a Loss Function<a class="headerlink" href="#defining-a-loss-function" title="Permalink to this headline">¶</a></h2>
+<p>Learning optimal model parameters involves minimizing a loss function. In the
+case of multi-class logistic regression, it is very common to use the negative
+log-likelihood as the loss. This is equivalent to maximizing the likelihood of the
+data set <img class="math" src="_images/math/96d02faf3df447274e236cb6f2d22d6eeed8bac4.png" alt="\cal{D}"/> under the model parameterized by <img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/>. Let
+us first start by defining the likelihood <img class="math" src="_images/math/94f23220c4c41a44672ebbbbdc0d8229d4b8d63f.png" alt="\cal{L}"/> and loss
+<img class="math" src="_images/math/63c17c295325f731666c7d74952b563a01e00fcc.png" alt="\ell"/>:</p>
+<div class="math">
+<p><img src="_images/math/9d85faa499ffeb6a2d8c9c02b694d55873db477d.png" alt="\mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =
+  \sum_{i=0}^{|\mathcal{D}|} \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
+\ell (\theta=\{W,b\}, \mathcal{D}) = - \mathcal{L} (\theta=\{W,b\}, \mathcal{D})" /></p>
+</div><p>While entire books are dedicated to the topic of minimization, gradient
+descent is by far the simplest method for minimizing arbitrary non-linear
+functions. This tutorial will use the method of stochastic gradient method with
+mini-batches (MSGD). See <a class="reference external" href="gettingstarted.html#opt-sgd"><em>Stochastic Gradient Descent</em></a> for more details.</p>
+<p>The following Theano code defines the (symbolic) loss for a given minibatch:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p_y_given_x</span><span class="p">)[</span><span class="n">T</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">y</span><span class="p">])</span>
+<span class="c"># note on syntax: T.arange(y.shape[0]) is a vector of integers [0,1,2,...,len(y)].</span>
+<span class="c"># Indexing a matrix M by the two vectors [0,1,...,K], [a,b,...,k] returns the</span>
+<span class="c"># elements M[0,a], M[1,b], ..., M[K,k] as a vector.  Here, we use this</span>
+<span class="c"># syntax to retrieve the log-probability of the correct labels, y.</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Even though the loss is formally defined as the <em>sum</em>, over the data set,
+of individual error terms, in practice, we use the <em>mean</em> (<tt class="docutils literal"><span class="pre">T.mean</span></tt>)
+in the code. This allows for the learning rate choice to be less dependent
+of the minibatch size.</p>
+</div>
+</div>
+<div class="section" id="creating-a-logisticregression-class">
+<h2>Creating a LogisticRegression class<a class="headerlink" href="#creating-a-logisticregression-class" title="Permalink to this headline">¶</a></h2>
+<p>We now have all the tools we need to define a <tt class="docutils literal"><span class="pre">LogisticRegression</span></tt> class, which
+encapsulates the basic behaviour of logistic regression. The code is very
+similar to what we have covered so far, and should be self explanatory.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initialize the parameters of the logistic regression</span>
+
+<span class="sd">        :type input: theano.tensor.TensorType</span>
+<span class="sd">        :param input: symbolic variable that describes the input of the</span>
+<span class="sd">                      architecture (e.g., one minibatch of input images)</span>
+
+<span class="sd">        :type n_in: int</span>
+<span class="sd">        :param n_in: number of input units, the dimension of the space in</span>
+<span class="sd">                     which the datapoint lies</span>
+
+<span class="sd">        :type n_out: int</span>
+<span class="sd">        :param n_out: number of output units, the dimension of the space in</span>
+<span class="sd">                      which the target lies</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># initialize with 0 the weights W as a matrix of shape (n_in, n_out)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span> <span class="n">value</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_in</span><span class="p">,</span><span class="n">n_out</span><span class="p">),</span>
+                                            <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span> <span class="o">=</span><span class="s">&#39;W&#39;</span> <span class="p">)</span>
+        <span class="c"># initialize the baises b as a vector of n_out 0s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span> <span class="n">value</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_out</span><span class="p">,),</span>
+                                            <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;b&#39;</span> <span class="p">)</span>
+
+        <span class="c"># compute vector of class-membership probabilities in symbolic form</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_y_given_x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+        <span class="c"># compute prediction as class whose probability is maximal in</span>
+        <span class="c"># symbolic form</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_pred</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_y_given_x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">negative_log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the mean of the negative log-likelihood of the prediction</span>
+<span class="sd">        of this model under a given target distribution.</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">          \frac{1}{|\mathcal{D}|} \mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =</span>
+<span class="sd">          \frac{1}{|\mathcal{D}|} \sum_{i=0}^{|\mathcal{D}|} \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\</span>
+<span class="sd">              \ell (\theta=\{W,b\}, \mathcal{D})</span>
+
+
+<span class="sd">        :param y: corresponds to a vector that gives for each example the</span>
+<span class="sd">                  correct label;</span>
+
+<span class="sd">        Note: we use the mean instead of the sum so that</span>
+<span class="sd">              the learning rate is less dependent on the batch size</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_y_given_x</span><span class="p">)[</span><span class="n">T</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">y</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>We instantiate this class as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># allocate symbolic variables for the data</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">fmatrix</span><span class="p">()</span>  <span class="c"># the data is presented as rasterized images (each being a 1-D row vector in x)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lvector</span><span class="p">()</span>  <span class="c"># the labels are presented as 1D vector of [long int] labels</span>
+
+<span class="c"># construct the logistic regression class</span>
+<span class="n">classifier</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span> \
+               <span class="nb">input</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">)),</span> <span class="n">n_in</span><span class="o">=</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="n">n_out</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that the inputs x and y are defined outside the scope of the
+<tt class="docutils literal"><span class="pre">LogisticRegression</span></tt> object. Since the class requires the input x to build its
+graph however, it is passed as a parameter of the <tt class="docutils literal"><span class="pre">__init__</span></tt> function.
+This is usefull in the case when you would want to concatenate such
+classes to form a deep network (case in which the input is not a new
+variable but the output of the layer below). While in this example we
+will not do that, the tutorials are designed such that the code is as
+similar as possible among them, making it easy to go from one tutorial
+to the other.</p>
+<p>The last step involves defining a (symbolic) cost variable to minimize, using
+the instance method <tt class="docutils literal"><span class="pre">classifier.negative_log_likelihood</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cost</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">negative_log_likelihood</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note how x is an implicit symbolic input to the symbolic definition of cost,
+here, because classifier.__init__ has defined its symbolic variables in terms of x.</p>
+</div>
+<div class="section" id="learning-the-model">
+<h2>Learning the Model<a class="headerlink" href="#learning-the-model" title="Permalink to this headline">¶</a></h2>
+<p>To implement MSGD in most programming languages (C/C++, Matlab, Python), one
+would start by manually deriving the expressions for the gradient of the loss
+with respect to the parameters: in this case <img class="math" src="_images/math/a3cd7b05cbfe9e11c9e27a1be8ec14b27c298ae9.png" alt="\partial{\ell}/\partial{W}"/>,
+and <img class="math" src="_images/math/8c0262097e92e28eb342b90994ab2f376623cb61.png" alt="\partial{\ell}/\partial{b}"/>, This can get pretty tricky for complex
+models, as expressions for <img class="math" src="_images/math/baee41942d6c03e8f81c415e0640691942dead6d.png" alt="\partial{\ell}/\partial{\theta}"/> can get
+fairly complex, especially when taking into account problems of numerical
+stability.</p>
+<p>With Theano, this work is greatly simplified as it performs
+automatic differentiation and applies certain math transforms to improve
+numerical stability.</p>
+<p>To get the gradients <img class="math" src="_images/math/a3cd7b05cbfe9e11c9e27a1be8ec14b27c298ae9.png" alt="\partial{\ell}/\partial{W}"/> and
+<img class="math" src="_images/math/8c0262097e92e28eb342b90994ab2f376623cb61.png" alt="\partial{\ell}/\partial{b}"/> in Theano, simply do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># compute the gradient of cost with respect to theta = (W,b)</span>
+<span class="n">g_W</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">classifier</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+<span class="n">g_b</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">classifier</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">g_W</span></tt> and <tt class="docutils literal"><span class="pre">g_b</span></tt> are again symbolic variables, which can be used as part of a
+computation graph. Performing one-step of gradient descent can then be done as
+follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># compute the gradient of cost with respect to theta = (W,b)</span>
+<span class="n">g_W</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span> <span class="n">wrt</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+<span class="n">g_b</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span> <span class="n">wrt</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+<span class="c"># specify how to update the parameters of the model as a dictionary</span>
+<span class="n">updates</span> <span class="o">=</span><span class="p">{</span><span class="n">classifier</span><span class="o">.</span><span class="n">W</span><span class="p">:</span> <span class="n">classifier</span><span class="o">.</span><span class="n">W</span> <span class="o">-</span> <span class="n">learning_rate</span><span class="o">*</span><span class="n">g_W</span><span class="p">,</span>\
+          <span class="n">classifier</span><span class="o">.</span><span class="n">b</span><span class="p">:</span> <span class="n">classifier</span><span class="o">.</span><span class="n">b</span> <span class="o">-</span> <span class="n">learning_rate</span><span class="o">*</span><span class="n">g_b</span><span class="p">}</span>
+
+<span class="c"># compiling a Theano function `train_model` that returns the cost, but in</span>
+<span class="c"># the same time updates the parameter of the model based on the rules</span>
+<span class="c"># defined in `updates`</span>
+<span class="n">train_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span>
+        <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+        <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">x</span><span class="p">:</span><span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+            <span class="n">y</span><span class="p">:</span><span class="n">train_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">updates</span></tt> dictionary contains, for each parameter, the
+stochastic gradient update operation. The <tt class="docutils literal"><span class="pre">givens</span></tt> dictionary indicates with
+what to replace certain variables of the graph. The function <tt class="docutils literal"><span class="pre">train_model</span></tt> is then
+defined such that:</p>
+<ul class="simple">
+<li>the input is the mini-batch index <tt class="docutils literal"><span class="pre">index</span></tt> that together with the batch
+size( which is not an input since it is fixed) defines <img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/> with
+corresponding labels <img class="math" src="_images/math/092e364e1d9d19ad5fffb0b46ef4cc7f2da02c1c.png" alt="y"/></li>
+<li>the return value is the cost/loss associated with the x, y defined by
+the <tt class="docutils literal"><span class="pre">index</span></tt></li>
+<li>on every function call, it will first replace <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">y</span></tt> with the
+corresponding slices from the training set as defined by the
+<tt class="docutils literal"><span class="pre">index</span></tt> and afterwards it will evaluate the cost
+associated with that minibatch and apply the operations defined by the
+<tt class="docutils literal"><span class="pre">updates</span></tt> dictionary.</li>
+</ul>
+<p>Each time <tt class="docutils literal"><span class="pre">train_model(index)</span></tt> function is called, it will thus compute and
+return the appropriate cost, while also performing a step of MSGD. The entire
+learning algorithm thus consists in looping over all examples in the dataset,
+and repeatedly calling the <tt class="docutils literal"><span class="pre">train_model</span></tt> function.</p>
+</div>
+<div class="section" id="testing-the-model">
+<h2>Testing the model<a class="headerlink" href="#testing-the-model" title="Permalink to this headline">¶</a></h2>
+<p>As explained in <a class="reference external" href="gettingstarted.html#opt-learn-classifier"><em>Learning a Classifier</em></a>, when testing the model we are
+interested in the number of misclassified examples (and not only in the likelihood).
+The <tt class="docutils literal"><span class="pre">LogisticRegression</span></tt> class therefore has an extra instance method, which
+builds the symbolic graph for retrieving the number of misclassified examples in
+each minibatch.</p>
+<p>The code is as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a float representing the number of errors in the minibatch</span>
+<span class="sd">        over the total number of examples of the minibatch ; zero</span>
+<span class="sd">        one loss over the size of the minibatch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">neq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>We then create a function <tt class="docutils literal"><span class="pre">test_model</span></tt> and a function <tt class="docutils literal"><span class="pre">validate_model</span></tt>, which we can call to retrieve this
+value. As you will see shortly, <tt class="docutils literal"><span class="pre">validate_model</span></tt> is key to our early-stopping
+implementation (see <a class="reference external" href="gettingstarted.html#opt-early-stopping"><em>Early-Stopping</em></a>). Both of these function
+will get as input a batch offset and will compute the number of
+missclassified examples for that mini-batch. The only difference between them
+is that one draws its batches from the testing set, while
+the other from the validation set.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># compiling a Theano function that computes the mistakes that are made by</span>
+<span class="c"># the model on a minibatch</span>
+<span class="n">test_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+        <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">x</span><span class="p">:</span><span class="n">test_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+            <span class="n">y</span><span class="p">:</span><span class="n">test_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+<span class="n">validate_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+        <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">x</span><span class="p">:</span><span class="n">valid_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+            <span class="n">y</span><span class="p">:</span><span class="n">valid_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="putting-it-all-together">
+<h2>Putting it All Together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h2>
+<p>The finished product is as follows.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This tutorial introduces logistic regression using Theano and stochastic </span>
+<span class="sd">gradient descent.  </span>
+
+<span class="sd">Logistic regression is a probabilistic, linear classifier. It is parametrized</span>
+<span class="sd">by a weight matrix :math:`W` and a bias vector :math:`b`. Classification is</span>
+<span class="sd">done by projecting data points onto a set of hyperplanes, the distance to</span>
+<span class="sd">which is used to determine a class membership probability. </span>
+
+<span class="sd">Mathematically, this can be written as:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">  P(Y=i|x, W,b) &amp;= softmax_i(W x + b) \\</span>
+<span class="sd">                &amp;= \frac {e^{W_i x + b_i}} {\sum_j e^{W_j x + b_j}}</span>
+
+
+<span class="sd">The output of the model or prediction is then done by taking the argmax of </span>
+<span class="sd">the vector whose i&#39;th element is P(Y=i|x).</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">  y_{pred} = argmax_i P(Y=i|x,W,b)</span>
+
+
+<span class="sd">This tutorial presents a stochastic gradient descent optimization method </span>
+<span class="sd">suitable for large datasets, and a conjugate gradient optimization method </span>
+<span class="sd">that is suitable for smaller datasets.</span>
+
+
+<span class="sd">References:</span>
+
+<span class="sd">    - textbooks: &quot;Pattern Recognition and Machine Learning&quot; - </span>
+<span class="sd">                 Christopher M. Bishop, section 4.3.2</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__docformat__</span> <span class="o">=</span> <span class="s">&#39;restructedtext en&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span><span class="o">,</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">cPickle</span><span class="o">,</span> <span class="nn">gzip</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">theano</span>
+<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="kn">as</span> <span class="nn">T</span>
+
+
+<span class="k">class</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Multi-class Logistic Regression Class</span>
+
+<span class="sd">    The logistic regression is fully described by a weight matrix :math:`W` </span>
+<span class="sd">    and bias vector :math:`b`. Classification is done by projecting data </span>
+<span class="sd">    points onto a set of hyperplanes, the distance to which is used to </span>
+<span class="sd">    determine a class membership probability. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">n_in</span><span class="p">,</span> <span class="n">n_out</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initialize the parameters of the logistic regression</span>
+
+<span class="sd">        :type input: theano.tensor.TensorType</span>
+<span class="sd">        :param input: symbolic variable that describes the input of the </span>
+<span class="sd">                      architecture (one minibatch)</span>
+<span class="sd">        </span>
+<span class="sd">        :type n_in: int</span>
+<span class="sd">        :param n_in: number of input units, the dimension of the space in </span>
+<span class="sd">                     which the datapoints lie</span>
+
+<span class="sd">        :type n_out: int</span>
+<span class="sd">        :param n_out: number of output units, the dimension of the space in </span>
+<span class="sd">                      which the labels lie</span>
+
+<span class="sd">        &quot;&quot;&quot;</span> 
+
+        <span class="c"># initialize with 0 the weights W as a matrix of shape (n_in, n_out) </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_in</span><span class="p">,</span><span class="n">n_out</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span>
+                                <span class="n">name</span><span class="o">=</span><span class="s">&#39;W&#39;</span><span class="p">)</span>
+        <span class="c"># initialize the baises b as a vector of n_out 0s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_out</span><span class="p">,),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span>
+                               <span class="n">name</span><span class="o">=</span><span class="s">&#39;b&#39;</span><span class="p">)</span>
+
+
+        <span class="c"># compute vector of class-membership probabilities in symbolic form</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_y_given_x</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+        <span class="c"># compute prediction as class whose probability is maximal in </span>
+        <span class="c"># symbolic form</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_pred</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_y_given_x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c"># parameters of the model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">]</span>
+
+
+
+
+
+    <span class="k">def</span> <span class="nf">negative_log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the mean of the negative log-likelihood of the prediction</span>
+<span class="sd">        of this model under a given target distribution.</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \frac{1}{|\mathcal{D}|} \mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =</span>
+<span class="sd">            \frac{1}{|\mathcal{D}|} \sum_{i=0}^{|\mathcal{D}|} \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\</span>
+<span class="sd">                \ell (\theta=\{W,b\}, \mathcal{D})</span>
+
+<span class="sd">        :type y: theano.tensor.TensorType</span>
+<span class="sd">        :param y: corresponds to a vector that gives for each example the</span>
+<span class="sd">                  correct label</span>
+
+<span class="sd">        Note: we use the mean instead of the sum so that</span>
+<span class="sd">              the learning rate is less dependent on the batch size</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># y.shape[0] is (symbolically) the number of rows in y, i.e., number of examples (call it n) in the minibatch</span>
+        <span class="c"># T.arange(y.shape[0]) is a symbolic vector which will contain [0,1,2,... n-1]</span>
+        <span class="c"># T.log(self.p_y_given_x) is a matrix of Log-Probabilities (call it LP) with one row per example and one column per class </span>
+        <span class="c"># LP[T.arange(y.shape[0]),y] is a vector v containing [LP[0,y[0]], LP[1,y[1]], LP[2,y[2]], ..., LP[n-1,y[n-1]]]</span>
+        <span class="c"># and T.mean(LP[T.arange(y.shape[0]),y]) is the mean (across minibatch examples) of the elements in v,</span>
+        <span class="c"># i.e., the mean log-likelihood across the minibatch.</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_y_given_x</span><span class="p">)[</span><span class="n">T</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">y</span><span class="p">])</span>
+
+
+    <span class="k">def</span> <span class="nf">errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a float representing the number of errors in the minibatch </span>
+<span class="sd">        over the total number of examples of the minibatch ; zero one</span>
+<span class="sd">        loss over the size of the minibatch</span>
+
+<span class="sd">        :type y: theano.tensor.TensorType</span>
+<span class="sd">        :param y: corresponds to a vector that gives for each example the </span>
+<span class="sd">                  correct label</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># check if y has same dimension of y_pred </span>
+        <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_pred</span><span class="o">.</span><span class="n">ndim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;y should have the same shape as self.y_pred&#39;</span><span class="p">,</span> 
+                <span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="s">&#39;y_pred&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_pred</span><span class="o">.</span><span class="n">type</span><span class="p">))</span>
+        <span class="c"># check if y is of the correct datatype        </span>
+        <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;int&#39;</span><span class="p">):</span>
+            <span class="c"># the T.neq operator returns a vector of 0s and 1s, where 1</span>
+            <span class="c"># represents a mistake in prediction</span>
+            <span class="k">return</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">neq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Loads the dataset</span>
+
+<span class="sd">    :type dataset: string</span>
+<span class="sd">    :param dataset: the path to the dataset (here MNIST)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c">#############</span>
+    <span class="c"># LOAD DATA #</span>
+    <span class="c">#############</span>
+
+    <span class="c"># Download the MNIST dataset if it is not present</span>
+    <span class="n">data_dir</span><span class="p">,</span> <span class="n">data_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">dataset</span><span class="p">))</span> <span class="ow">and</span> <span class="n">data_file</span> <span class="o">==</span> <span class="s">&#39;mnist.pkl.gz&#39;</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">urllib</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="s">&#39;http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;Downloading data from </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">origin</span>
+        <span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&#39;... loading data&#39;</span>
+
+    <span class="c"># Load the dataset </span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span><span class="s">&#39;rb&#39;</span><span class="p">)</span>
+    <span class="n">train_set</span><span class="p">,</span> <span class="n">valid_set</span><span class="p">,</span> <span class="n">test_set</span> <span class="o">=</span> <span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="nf">shared_dataset</span><span class="p">(</span><span class="n">data_xy</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Function that loads the dataset into shared variables</span>
+<span class="sd">        </span>
+<span class="sd">        The reason we store our dataset in shared variables is to allow </span>
+<span class="sd">        Theano to copy it into the GPU memory (when code is run on GPU). </span>
+<span class="sd">        Since copying data into the GPU is slow, copying a minibatch everytime</span>
+<span class="sd">        is needed (the default behaviour if the data is not in a shared </span>
+<span class="sd">        variable) would lead to a large decrease in performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data_x</span><span class="p">,</span> <span class="n">data_y</span> <span class="o">=</span> <span class="n">data_xy</span>
+        <span class="n">shared_x</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data_x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+        <span class="n">shared_y</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data_y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+        <span class="c"># When storing data on the GPU it has to be stored as floats</span>
+        <span class="c"># therefore we will store the labels as ``floatX`` as well</span>
+        <span class="c"># (``shared_y`` does exactly that). But during our computations</span>
+        <span class="c"># we need them as ints (we use labels as index, and if they are </span>
+        <span class="c"># floats it doesn&#39;t make sense) therefore instead of returning </span>
+        <span class="c"># ``shared_y`` we will have to cast it to int. This little hack</span>
+        <span class="c"># lets ous get around this issue</span>
+        <span class="k">return</span> <span class="n">shared_x</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">shared_y</span><span class="p">,</span> <span class="s">&#39;int32&#39;</span><span class="p">)</span>
+
+    <span class="n">test_set_x</span><span class="p">,</span>  <span class="n">test_set_y</span>  <span class="o">=</span> <span class="n">shared_dataset</span><span class="p">(</span><span class="n">test_set</span><span class="p">)</span>
+    <span class="n">valid_set_x</span><span class="p">,</span> <span class="n">valid_set_y</span> <span class="o">=</span> <span class="n">shared_dataset</span><span class="p">(</span><span class="n">valid_set</span><span class="p">)</span>
+    <span class="n">train_set_x</span><span class="p">,</span> <span class="n">train_set_y</span> <span class="o">=</span> <span class="n">shared_dataset</span><span class="p">(</span><span class="n">train_set</span><span class="p">)</span>
+
+    <span class="n">rval</span> <span class="o">=</span> <span class="p">[(</span><span class="n">train_set_x</span><span class="p">,</span> <span class="n">train_set_y</span><span class="p">),</span> <span class="p">(</span><span class="n">valid_set_x</span><span class="p">,</span><span class="n">valid_set_y</span><span class="p">),</span> <span class="p">(</span><span class="n">test_set_x</span><span class="p">,</span> <span class="n">test_set_y</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">rval</span>
+
+
+
+
+<span class="k">def</span> <span class="nf">sgd_optimization_mnist</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.13</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s">&#39;../data/mnist.pkl.gz&#39;</span><span class="p">,</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">600</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Demonstrate stochastic gradient descent optimization of a log-linear </span>
+<span class="sd">    model</span>
+
+<span class="sd">    This is demonstrated on MNIST.</span>
+<span class="sd">    </span>
+<span class="sd">    :type learning_rate: float</span>
+<span class="sd">    :param learning_rate: learning rate used (factor for the stochastic </span>
+<span class="sd">                          gradient)</span>
+
+<span class="sd">    :type n_epochs: int</span>
+<span class="sd">    :param n_epochs: maximal number of epochs to run the optimizer </span>
+
+<span class="sd">    :type dataset: string</span>
+<span class="sd">    :param dataset: the path of the MNIST dataset file from </span>
+<span class="sd">                         http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">datasets</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="n">train_set_x</span><span class="p">,</span> <span class="n">train_set_y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">valid_set_x</span><span class="p">,</span> <span class="n">valid_set_y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">test_set_x</span> <span class="p">,</span> <span class="n">test_set_y</span>  <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="c"># compute number of minibatches for training, validation and testing</span>
+    <span class="n">n_train_batches</span> <span class="o">=</span> <span class="n">train_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">batch_size</span>
+    <span class="n">n_valid_batches</span> <span class="o">=</span> <span class="n">valid_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">batch_size</span>
+    <span class="n">n_test_batches</span>  <span class="o">=</span> <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="o">/</span> <span class="n">batch_size</span>
+
+
+    <span class="c">######################</span>
+    <span class="c"># BUILD ACTUAL MODEL #</span>
+    <span class="c">######################</span>
+    <span class="k">print</span> <span class="s">&#39;... building the model&#39;</span>
+
+
+    <span class="c"># allocate symbolic variables for the data</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lscalar</span><span class="p">()</span>    <span class="c"># index to a [mini]batch </span>
+    <span class="n">x</span>     <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>  <span class="c"># the data is presented as rasterized images</span>
+    <span class="n">y</span>     <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">ivector</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span> <span class="c"># the labels are presented as 1D vector of </span>
+                           <span class="c"># [int] labels</span>
+
+    <span class="c"># construct the logistic regression class</span>
+    <span class="c"># Each MNIST image has size 28*28</span>
+    <span class="n">classifier</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span> <span class="nb">input</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">n_in</span><span class="o">=</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="n">n_out</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+    <span class="c"># the cost we minimize during training is the negative log likelihood of </span>
+    <span class="c"># the model in symbolic format</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">negative_log_likelihood</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> 
+
+    <span class="c"># compiling a Theano function that computes the mistakes that are made by </span>
+    <span class="c"># the model on a minibatch</span>
+    <span class="n">test_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> 
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+            <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">x</span><span class="p">:</span><span class="n">test_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+                <span class="n">y</span><span class="p">:</span><span class="n">test_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="n">validate_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span> <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> 
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">errors</span><span class="p">(</span><span class="n">y</span><span class="p">),</span>
+            <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">x</span><span class="p">:</span><span class="n">valid_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+                <span class="n">y</span><span class="p">:</span><span class="n">valid_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="c"># compute the gradient of cost with respect to theta = (W,b) </span>
+    <span class="n">g_W</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span> <span class="n">wrt</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+    <span class="n">g_b</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span> <span class="n">wrt</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="c"># specify how to update the parameters of the model as a dictionary</span>
+    <span class="n">updates</span> <span class="o">=</span><span class="p">{</span><span class="n">classifier</span><span class="o">.</span><span class="n">W</span><span class="p">:</span> <span class="n">classifier</span><span class="o">.</span><span class="n">W</span> <span class="o">-</span> <span class="n">learning_rate</span><span class="o">*</span><span class="n">g_W</span><span class="p">,</span>\
+              <span class="n">classifier</span><span class="o">.</span><span class="n">b</span><span class="p">:</span> <span class="n">classifier</span><span class="o">.</span><span class="n">b</span> <span class="o">-</span> <span class="n">learning_rate</span><span class="o">*</span><span class="n">g_b</span><span class="p">}</span>
+
+    <span class="c"># compiling a Theano function `train_model` that returns the cost, but in </span>
+    <span class="c"># the same time updates the parameter of the model based on the rules </span>
+    <span class="c"># defined in `updates`</span>
+    <span class="n">train_model</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> 
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">cost</span><span class="p">,</span> 
+            <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+            <span class="n">givens</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">x</span><span class="p">:</span><span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">],</span>
+                <span class="n">y</span><span class="p">:</span><span class="n">train_set_y</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+    <span class="c">###############</span>
+    <span class="c"># TRAIN MODEL #</span>
+    <span class="c">###############</span>
+    <span class="k">print</span> <span class="s">&#39;... training the model&#39;</span>
+    <span class="c"># early-stopping parameters</span>
+    <span class="n">patience</span>              <span class="o">=</span> <span class="mi">5000</span>  <span class="c"># look as this many examples regardless</span>
+    <span class="n">patience_increase</span>     <span class="o">=</span> <span class="mi">2</span>     <span class="c"># wait this much longer when a new best is </span>
+                                  <span class="c"># found</span>
+    <span class="n">improvement_threshold</span> <span class="o">=</span> <span class="mf">0.995</span> <span class="c"># a relative improvement of this much is </span>
+                                  <span class="c"># considered significant</span>
+    <span class="n">validation_frequency</span>  <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">,</span> <span class="n">patience</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>  
+                                  <span class="c"># go through this many </span>
+                                  <span class="c"># minibatche before checking the network </span>
+                                  <span class="c"># on the validation set; in this case we </span>
+                                  <span class="c"># check every epoch </span>
+
+    <span class="n">best_params</span>          <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">best_validation_loss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span>
+    <span class="n">test_score</span>           <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+    <span class="n">done_looping</span> <span class="o">=</span> <span class="bp">False</span> 
+    <span class="n">epoch</span> <span class="o">=</span> <span class="mi">0</span>  
+    <span class="k">while</span> <span class="p">(</span><span class="n">epoch</span> <span class="o">&lt;</span> <span class="n">n_epochs</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">done_looping</span><span class="p">):</span>
+        <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">minibatch_index</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">):</span>
+
+            <span class="n">minibatch_avg_cost</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">minibatch_index</span><span class="p">)</span>
+            <span class="c"># iteration number</span>
+            <span class="nb">iter</span> <span class="o">=</span> <span class="n">epoch</span> <span class="o">*</span> <span class="n">n_train_batches</span> <span class="o">+</span> <span class="n">minibatch_index</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nb">iter</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">validation_frequency</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+                <span class="c"># compute zero-one loss on validation set </span>
+                <span class="n">validation_losses</span> <span class="o">=</span> <span class="p">[</span><span class="n">validate_model</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_valid_batches</span><span class="p">)]</span>
+                <span class="n">this_validation_loss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">validation_losses</span><span class="p">)</span>
+
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;epoch </span><span class="si">%i</span><span class="s">, minibatch </span><span class="si">%i</span><span class="s">/</span><span class="si">%i</span><span class="s">, validation error </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">&#39;</span> <span class="o">%</span> \
+                    <span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">minibatch_index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_train_batches</span><span class="p">,</span> \
+                    <span class="n">this_validation_loss</span><span class="o">*</span><span class="mf">100.</span><span class="p">))</span>
+
+
+                <span class="c"># if we got the best validation score until now</span>
+                <span class="k">if</span> <span class="n">this_validation_loss</span> <span class="o">&lt;</span> <span class="n">best_validation_loss</span><span class="p">:</span>
+                    <span class="c">#improve patience if loss improvement is good enough</span>
+                    <span class="k">if</span> <span class="n">this_validation_loss</span> <span class="o">&lt;</span> <span class="n">best_validation_loss</span> <span class="o">*</span>  \
+                       <span class="n">improvement_threshold</span> <span class="p">:</span>
+                        <span class="n">patience</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">patience</span><span class="p">,</span> <span class="nb">iter</span> <span class="o">*</span> <span class="n">patience_increase</span><span class="p">)</span>
+
+                    <span class="n">best_validation_loss</span> <span class="o">=</span> <span class="n">this_validation_loss</span>
+                    <span class="c"># test it on the test set</span>
+
+                    <span class="n">test_losses</span> <span class="o">=</span> <span class="p">[</span><span class="n">test_model</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_test_batches</span><span class="p">)]</span>
+                    <span class="n">test_score</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">test_losses</span><span class="p">)</span>
+
+                    <span class="k">print</span><span class="p">((</span><span class="s">&#39;     epoch </span><span class="si">%i</span><span class="s">, minibatch </span><span class="si">%i</span><span class="s">/</span><span class="si">%i</span><span class="s">, test error of best &#39;</span> 
+                       <span class="s">&#39;model </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">&#39;</span><span class="p">)</span> <span class="o">%</span> \
+                        <span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">minibatch_index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_train_batches</span><span class="p">,</span><span class="n">test_score</span><span class="o">*</span><span class="mf">100.</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">patience</span> <span class="o">&lt;=</span> <span class="nb">iter</span> <span class="p">:</span>
+                <span class="n">done_looping</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">break</span>
+
+    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">((</span><span class="s">&#39;Optimization complete with best validation score of </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">,&#39;</span>
+           <span class="s">&#39;with test performance </span><span class="si">%f</span><span class="s"> </span><span class="si">%%</span><span class="s">&#39;</span><span class="p">)</span> <span class="o">%</span>  
+                 <span class="p">(</span><span class="n">best_validation_loss</span> <span class="o">*</span> <span class="mf">100.</span><span class="p">,</span> <span class="n">test_score</span><span class="o">*</span><span class="mf">100.</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&#39;The code run for </span><span class="si">%d</span><span class="s"> epochs, with </span><span class="si">%f</span><span class="s"> epochs/sec&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">epoch</span><span class="p">,</span><span class="mf">1.</span><span class="o">*</span><span class="n">epoch</span><span class="o">/</span><span class="p">(</span><span class="n">end_time</span><span class="o">-</span><span class="n">start_time</span><span class="p">))</span>
+    <span class="k">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;The code for file &#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">__file__</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; ran for </span><span class="si">%.1f</span><span class="s">s&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="n">end_time</span><span class="o">-</span><span class="n">start_time</span><span class="p">)))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">sgd_optimization_mnist</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The user can learn to classify MNIST digits with SGD logistic regression, by typing, from
+within the DeepLearningTutorials folder:</p>
+<div class="highlight-bash"><div class="highlight"><pre>python code/logistic_sgd.py
+</pre></div>
+</div>
+<p>The output one should expect is of the form :</p>
+<div class="highlight-bash"><div class="highlight"><pre>...
+epoch 73, minibatch 83/83, validation error 7.500000 %
+    epoch 73, minibatch 83/83, <span class="nb">test </span>error of best model 7.489583 %
+epoch 74, minibatch 83/83, validation error 7.479167 %
+    epoch 74, minibatch 83/83, <span class="nb">test </span>error of best model 7.489583 %
+Optimization <span class="nb">complete </span>with best validation score of 7.479167 %,with <span class="nb">test </span>performance 7.489583 %
+The code run <span class="k">for </span>75 epochs, with 1.936983 epochs/sec
+</pre></div>
+</div>
+<p>On an Intel(R) Core(TM)2 Duo CPU E8400 &#64; 3.00 Ghz  the code runs with
+approximately 1.936 epochs/sec and it took 75 epochs to reach a test
+error of 7.489%. On the GPU the code does almost 10.0 epochs/sec. For this
+instance we used a batch size of 600.</p>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="f1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[1]</td><td>For smaller datasets and simpler models, more sophisticated descent
+algorithms can be more effective. The sample code
+<a class="reference external" href="http://deeplearning.net/tutorial/code/logistic_cg.py">logistic_cg.py</a>
+demonstrates how to use SciPy&#8217;s conjugate gradient solver with Theano
+on the logistic regression task.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="mlp.html" title="Multilayer Perceptron"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gettingstarted.html" title="Getting Started"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

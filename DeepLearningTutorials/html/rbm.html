@@ -1,0 +1,883 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Restricted Boltzmann Machines (RBM) &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Deep Belief Networks" href="DBN.html" />
+    <link rel="prev" title="Stacked Denoising Autoencoders (SdA)" href="SdA.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="DBN.html" title="Deep Belief Networks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="SdA.html" title="Stacked Denoising Autoencoders (SdA)"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Restricted Boltzmann Machines (RBM)</a><ul>
+<li><a class="reference external" href="#energy-based-models-ebm">Energy-Based Models (EBM)</a></li>
+<li><a class="reference external" href="#id1">Restricted Boltzmann Machines (RBM)</a></li>
+<li><a class="reference external" href="#sampling-in-an-rbm">Sampling in an RBM</a><ul>
+<li><a class="reference external" href="#contrastive-divergence-cd-k">Contrastive Divergence (CD-k)</a></li>
+<li><a class="reference external" href="#persistent-cd">Persistent CD</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#implementation">Implementation</a><ul>
+<li><a class="reference external" href="#tracking-progress">Tracking Progress</a></li>
+<li><a class="reference external" href="#main-loop">Main Loop</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#results">Results</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="SdA.html"
+                                  title="previous chapter">Stacked Denoising Autoencoders (SdA)</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="DBN.html"
+                                  title="next chapter">Deep Belief Networks</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/rbm.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="restricted-boltzmann-machines-rbm">
+<span id="rbm"></span><h1>Restricted Boltzmann Machines (RBM)<a class="headerlink" href="#restricted-boltzmann-machines-rbm" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This section assumes the reader has already read through <a class="reference external" href="logreg.html"><em>Classifying MNIST digits using Logistic Regression</em></a>
+and <a class="reference external" href="mlp.html"><em>Multilayer Perceptron</em></a>. Additionally it uses the following Theano functions
+and concepts : <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html?highlight=tanh">T.tanh</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-shared-variables">shared variables</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/adding.html#adding-two-scalars">basic arithmetic ops</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#computing-gradients">T.grad</a>, <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#using-random-numbers">Random numbers</a>, <a class="reference external" href="http://deeplearning.net/software/theano/library/config.html#config.floatX">floatX</a> and <a class="reference external" href="http://deeplearning.net/software/theano/library/scan.html">scan</a>. If you intend to run the code on GPU also read <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/using_gpu.html">GPU</a>.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The code for this section is available for download <a class="reference external" href="http://deeplearning.net/tutorial/code/rbm.py">here</a>.</p>
+</div>
+<div class="section" id="energy-based-models-ebm">
+<h2>Energy-Based Models (EBM)<a class="headerlink" href="#energy-based-models-ebm" title="Permalink to this headline">¶</a></h2>
+<p><strong>Energy-based</strong> models associate a scalar energy to each configuration of the
+variables of interest. Learning corresponds to modifying that energy function
+so that its shape has desirable properties. For example, we would like
+plausible or desirable configurations to have low energy.  Energy-based
+probabilistic models define a probability distribution through an energy
+function, as follows:</p>
+<div class="math" id="equation-energy1">
+<p><span class="eqno">(1)</span><img src="_images/math/e77a058e77ddf36e096614aeae8c2b98e4f0cd0f.png" alt="p(x) = \frac {e^{-E(x)}} {Z}." /></p>
+</div><p>The normalizing factor <img class="math" src="_images/math/3ead47fb9fb4a4c273feee398f72ff2a09702b84.png" alt="Z"/> is called the <strong>partition function</strong> by analogy
+with physical systems.</p>
+<div class="math">
+<p><img src="_images/math/e83e62224d194da8726ac3702b51f5588cb7953f.png" alt="Z = \sum_x e^{-E(x)}" /></p>
+</div><p>An energy-based model can be learnt by performing (stochastic) gradient
+descent on the empirical negative log-likelihood of the training data. As for
+the logistic regression we will first define the log-likelihood and then the
+loss function as being the negative log-likelihood.</p>
+<div class="math">
+<p><img src="_images/math/6e9a3350ac38c8ffe9738dc03e3582b4b0510783.png" alt="\mathcal{L}(\theta, \mathcal{D}) = \frac{1}{N} \sum_{x^{(i)} \in
+\mathcal{D}} \log\ p(x^{(i)})\\
+\ell (\theta, \mathcal{D}) = - \mathcal{L} (\theta, \mathcal{D})" /></p>
+</div><p>using the stochastic gradient <img class="math" src="_images/math/6f8b7870b94b633c94870d24e4c591fdfa236a59.png" alt="-\frac{\partial  \log p(x^{(i)})}{\partial
+\theta}"/>, where <img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/> are the parameters of the model.</p>
+<p><strong>EBMs with Hidden Units</strong></p>
+<p>In many cases of interest, we do not observe the example <img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/> fully, or we
+want to introduce some non-observed variables to increase the expressive power
+of the model. So we consider an observed part (still denoted <img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/> here) and a
+<strong>hidden</strong> part <img class="math" src="_images/math/8189a5b5a0917b8c93350827be4038af1839139d.png" alt="h"/>. We can then write:</p>
+<div class="math" id="equation-energy2">
+<p><span class="eqno">(2)</span><img src="_images/math/b3061792ad49dc801087ce06c47dc779dd7c2e4a.png" alt="P(x) = \sum_h P(x,h) = \sum_h \frac{e^{-E(x,h)}}{Z}." /></p>
+</div><p>In such cases, to map this formulation to one similar to Eq. <a href="#equation-energy1">(1)</a>, we
+introduce the notation (inspired from physics) of <strong>free energy</strong>, defined as
+follows:</p>
+<div class="math" id="equation-free_energy">
+<p><span class="eqno">(3)</span><img src="_images/math/c6072c39bbbfaa1b4ab5773927e98e76bc1699b7.png" alt="\mathcal{F}(x) = - \log \sum_h e^{-E(x,h)}" /></p>
+</div><p>which allows us to write,</p>
+<div class="math">
+<p><img src="_images/math/19ba2c2dcc161975217d07846a93b528816f5cfe.png" alt="&amp;P(x) = \frac{e^{-\mathcal{F}(x)}}{Z} \text{ with } Z=\sum_x e^{-\mathcal{F}(x)}." /></p>
+</div><p>The data negative log-likelihood gradient then has a particularly interesting
+form.</p>
+<div class="math" id="equation-free_energy_grad">
+<p><span class="eqno">(4)</span><img src="_images/math/05732d9aaadc8236c0659bd6ffc77fcc4d3b9ba6.png" alt="- \frac{\partial  \log p(x)}{\partial \theta}
+ &amp;= \frac{\partial \mathcal{F}(x)}{\partial \theta} -
+       \sum_{\tilde{x}} p(\tilde{x}) \
+           \frac{\partial \mathcal{F}(\tilde{x})}{\partial \theta}." /></p>
+</div><p>Notice that the above gradient contains two terms, which are referred to as
+the <strong>positive</strong> and <strong>negative phase</strong>. The terms positive and negative do
+not refer to the sign of each term in the equation, but rather reflect their
+effect on the probability density defined by the model. The first term
+increases the probability of training data (by reducing the corresponding free
+energy), while the second term decreases the probability of samples generated
+by the model.</p>
+<p>It is usually difficult to determine this gradient analytically, as it
+involves the computation of
+<img class="math" src="_images/math/0654115e46f8e2f40231392d456460c738b8936f.png" alt="E_P [ \frac{\partial \mathcal{F}(x)} {\partial \theta} ]"/>. This is
+nothing less than an expectation over all possible configurations of the input
+<img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/> (under the distribution <img class="math" src="_images/math/4b4cade9ca8a2c8311fafcf040bc5b15ca507f52.png" alt="P"/> formed by the model) !</p>
+<p>The first step in making this computation tractable is to estimate the
+expectation using a fixed number of model samples. Samples used to estimate the
+negative phase gradient are referred to as <strong>negative particles</strong>, which are
+denoted as <img class="math" src="_images/math/48e4889e4af48a39c5f822a1befcfd221c7b07ad.png" alt="\mathcal{N}"/>. The gradient can then be written as:</p>
+<div class="math" id="equation-bm_grad">
+<p><span class="eqno">(5)</span><img src="_images/math/0509a1a8b444a8db4c0d7cfa32225400f9484d79.png" alt="- \frac{\partial \log p(x)}{\partial \theta}
+ &amp;\approx
+  \frac{\partial \mathcal{F}(x)}{\partial \theta} -
+   \frac{1}{|\mathcal{N}|}\sum_{\tilde{x} \in \mathcal{N}} \
+   \frac{\partial \mathcal{F}(\tilde{x})}{\partial \theta}." /></p>
+</div><p>where we would ideally like elements <img class="math" src="_images/math/c27ef249f820f799c441683c186b5b97b7f93833.png" alt="\tilde{x}"/> of <img class="math" src="_images/math/48e4889e4af48a39c5f822a1befcfd221c7b07ad.png" alt="\mathcal{N}"/> to be sampled
+according to <img class="math" src="_images/math/4b4cade9ca8a2c8311fafcf040bc5b15ca507f52.png" alt="P"/> (i.e. we are doing Monte-Carlo).
+With the above formula, we almost have a pratical, stochastic algorithm for
+learning an EBM. The only missing ingredient is how to extract these negative
+particles <img class="math" src="_images/math/48e4889e4af48a39c5f822a1befcfd221c7b07ad.png" alt="\mathcal{N}"/>. While the statistical literature abounds with
+sampling methods, Markov Chain Monte Carlo methods are especially well suited
+for models such as the Restricted Boltzmann Machines (RBM), a specific type of
+EBM.</p>
+</div>
+<div class="section" id="id1">
+<h2>Restricted Boltzmann Machines (RBM)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>Boltzmann Machines (BMs) are a particular form of log-linear Markov Random Field (MRF),
+i.e., for which the energy function is linear in its free parameters. To make
+them powerful enough to represent complicated distributions (i.e., go from the
+limited parametric setting to a non-parametric one), we consider that some of
+the variables are never observed (they are called hidden). By having more hidden
+variables (also called hidden units), we can increase the modeling capacity
+of the Boltzmann Machine (BM).
+Restricted Boltzmann Machines further restrict BMs to
+those without visible-visible and hidden-hidden connections.  A graphical
+depiction of an RBM is shown below.</p>
+<div align="center" class="align-center"><img alt="_images/rbm.png" class="align-center" src="_images/rbm.png" /></div>
+<p>The energy function <img class="math" src="_images/math/b73b45b2e3dacf0341bfc91d613bfd546600fb8a.png" alt="E(v,h)"/> of an RBM is defined as:</p>
+<div class="math" id="equation-rbm_energy">
+<p><span class="eqno">(6)</span><img src="_images/math/06b7886e2624c3f9d97166acbe9a36bbf5ad0ec6.png" alt="E(v,h) = - b'v - c'h - h'Wv" /></p>
+</div><p>where <img class="math" src="_images/math/10cb764f88509fb1c8012366993fdbee98f31bc5.png" alt="W"/> represents the weights connecting hidden and visible units and
+<img class="math" src="_images/math/8136a7ef6a03334a7246df9097e5bcc31ba33fd2.png" alt="b"/>, <img class="math" src="_images/math/3372c1cb6d68cf97c2d231acc0b47b95a9ed04cc.png" alt="c"/> are the offsets of the visible and hidden layers
+respectively.</p>
+<p>This translates directly to the following free energy formula:</p>
+<div class="math">
+<p><img src="_images/math/690d6785088eca2c3e557cce1e7248c61ee0e068.png" alt="\mathcal{F}(v)= - b'v - \sum_i \log \sum_{h_i} e^{h_i (c_i + W_i v)}." /></p>
+</div><p>Because of the specific structure of RBMs, visible and hidden units are
+conditionally independent given one-another. Using this property, we can
+write:</p>
+<div class="math">
+<p><img src="_images/math/4abe6f61702d2277ab84f6dbac446901ca22df9d.png" alt="p(h|v) &amp;= \prod_i p(h_i|v) \\
+p(v|h) &amp;= \prod_j p(v_j|h)." /></p>
+</div><p><strong>RBMs with binary units</strong></p>
+<p>In the commonly studied case of using binary units (where <img class="math" src="_images/math/42628ab5952aa041b3649af187c7f256cfb4fe9d.png" alt="v_j"/> and <img class="math" src="_images/math/e7ef45fca4d8f54354acb486ba7693255f1b5f06.png" alt="h_i \in
+\{0,1\}"/>), we obtain from Eq. <a href="#equation-rbm_energy">(6)</a> and <a href="#equation-energy2">(2)</a>, a probabilistic
+version of the usual neuron activation function:</p>
+<div class="math" id="equation-rbm_propup">
+<p><span class="eqno">(7)</span><img src="_images/math/2d501a4641b4a799e2dc4dfb32bb8b4be7178a7f.png" alt="P(h_i=1|v) = sigm(c_i + W_i v) \\" /></p>
+</div><div class="math" id="equation-rbm_propdown">
+<p><span class="eqno">(8)</span><img src="_images/math/6391e6f5ebde9442c5a4e4eddaa4ada18a399b38.png" alt="P(v_j=1|h) = sigm(b_j + W'_j h)" /></p>
+</div><p>The free energy of an RBM with binary units further simplifies to:</p>
+<div class="math" id="equation-rbm_free_energy">
+<p><span class="eqno">(9)</span><img src="_images/math/82c8eaf19d0995f2940783368468cb66a8aea965.png" alt="\mathcal{F}(v)= - b'v - \sum_i \log(1 + e^{(c_i + W_i v)})." /></p>
+</div><p><strong>Update Equations with Binary Units</strong></p>
+<p>Combining Eqs. <a href="#equation-bm_grad">(5)</a> with <a href="#equation-rbm_free_energy">(9)</a>, we obtain the
+following log-likelihood gradients for an RBM with binary units:</p>
+<div class="math" id="equation-rbm_grad">
+<p><span class="eqno">(10)</span><img src="_images/math/11f30506e02197abb6a70594b4a2b9d6b7a64211.png" alt="- \frac{\partial{ \log p(v)}}{\partial W_{ij}} &amp;=
+    E_v[p(h_i|v) \cdot v_j]
+    - v^{(i)}_j \cdot sigm(W_i \cdot v^{(i)} + c_i) \\
+-\frac{\partial{ \log p(v)}}{\partial c_i} &amp;=
+    E_v[p(h_i|v)] - sigm(W_i \cdot v^{(i)})  \\
+-\frac{\partial{ \log p(v)}}{\partial b_j} &amp;=
+    E_v[p(v_j|h)] - v^{(i)}_j" /></p>
+</div><p>For a more detailed derivation of these equations, we refer the reader to the
+following <a class="reference external" href="http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/DBNEquations">page</a>,
+or to section 5 of <a class="reference external" href="http://www.iro.umontreal.ca/%7Elisa/publications2/index.php/publications/show/239">Learning Deep Architectures for AI</a>. We will however not use these formulas, but rather get the gradient using Theano <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/examples.html#computing-gradients">T.grad</a>
+from equation <a href="#equation-free_energy_grad">(4)</a>.</p>
+</div>
+<div class="section" id="sampling-in-an-rbm">
+<h2>Sampling in an RBM<a class="headerlink" href="#sampling-in-an-rbm" title="Permalink to this headline">¶</a></h2>
+<p>Samples of <img class="math" src="_images/math/2751d79d3bbfb34440d68c685fe6ba7414951749.png" alt="p(x)"/> can be obtained by running a Markov chain to
+convergence, using Gibbs sampling as the transition operator.</p>
+<p>Gibbs sampling of the joint of N random variables <img class="math" src="_images/math/a15325b24df6b4289dd52f570f28d1cc60a6f8db.png" alt="S=(S_1, ... , S_N)"/>
+is done through a sequence of N sampling sub-steps of the form
+<img class="math" src="_images/math/9646229cee2762d4734dc074e42a441b19a1841f.png" alt="S_i \sim p(S_i | S_{-i})"/> where <img class="math" src="_images/math/8a45df05abac316b7a117e9dbbcb8b4fa49d26bd.png" alt="S_{-i}"/> contains the <img class="math" src="_images/math/a256c70ad4c46ec1127c5be68f8bb3075e9ced31.png" alt="N-1"/>
+other random variables in <img class="math" src="_images/math/ad28c83c99a8fd0dd2e2e594c9d02ee532765a0a.png" alt="S"/> excluding <img class="math" src="_images/math/9e0ec34cd8860ceb97113f81ba768ba739ad5166.png" alt="S_i"/>.</p>
+<p>For RBMs, <img class="math" src="_images/math/ad28c83c99a8fd0dd2e2e594c9d02ee532765a0a.png" alt="S"/> consists of the set of visible and hidden units. However,
+since they are conditionally independent, one can perform block Gibbs
+sampling. In this setting, visible units are sampled simultaneously given
+fixed values of the hidden units. Similarly, hidden units are sampled
+simultaneously given the visibles. A step in the Markov chain is thus taken as
+follows:</p>
+<div class="math">
+<p><img src="_images/math/af0988c3f60f90180305fcf141b93fb087493719.png" alt="h^{(n+1)} &amp;\sim sigm(W'v^{(n)} + c) \\
+v^{(n+1)} &amp;\sim sigm(W h^{(n+1)} + b)," /></p>
+</div><p>where <img class="math" src="_images/math/53797c8b210035bdb9c449f5b6c54cd55c13376e.png" alt="h^{(n)}"/> refers to the set of all hidden units at the n-th step of
+the Markov chain. What it means is that, for example, <img class="math" src="_images/math/315207d2658a2cb539262f6e52e17fa20eb7d517.png" alt="h^{(n+1)}_i"/> is
+randomly chosen to be 1 (versus 0) with probability <img class="math" src="_images/math/f1167dc68d90a52c305ccc8b883805a7ec7aa5f1.png" alt="sigm(W_i'v^{(n)} + c_i)"/>,
+and similarly,
+<img class="math" src="_images/math/9113cc11dcfd2e673b1a54c030ab5cea38ad8a23.png" alt="v^{(n+1)}_j"/> is
+randomly chosen to be 1 (versus 0) with probability <img class="math" src="_images/math/75803f83b54a73070238da410c29e08719b044f8.png" alt="sigm(W_{.j} h^{(n+1)} + b_j)"/>.</p>
+<p>This can be illustrated graphically:</p>
+<div align="center" class="align-center"><img alt="_images/markov_chain.png" class="align-center" src="_images/markov_chain.png" /></div>
+<p>As <img class="math" src="_images/math/1e37c40d318033f8dc7c768d59865e74c543231d.png" alt="t \rightarrow \infty"/>, samples <img class="math" src="_images/math/6d1fea613874a412d1a4808ac35bd15703ae0068.png" alt="(v^{(t)}, h^{(t)})"/> are
+guaranteed to be accurate samples of <img class="math" src="_images/math/7c0491c3f396412d34062e27ceccee3b6658f417.png" alt="p(v,h)"/>.</p>
+<p>In theory, each parameter update in the learning process would require running
+one such chain to convergence. It is needless to say that doing so would be
+prohibitively expensive. As such, several algorithms have been devised for
+RBMs, in order to efficiently sample from <img class="math" src="_images/math/7c0491c3f396412d34062e27ceccee3b6658f417.png" alt="p(v,h)"/> during the learning
+process.</p>
+<div class="section" id="contrastive-divergence-cd-k">
+<h3>Contrastive Divergence (CD-k)<a class="headerlink" href="#contrastive-divergence-cd-k" title="Permalink to this headline">¶</a></h3>
+<p>Contrastive Divergence uses two tricks to speed up the sampling process:</p>
+<ul class="simple">
+<li>since we eventually want <img class="math" src="_images/math/32d0c47f0c8cd8e19871bcf6743e34ef0dddaa12.png" alt="p(v) \approx p_{train}(v)"/> (the true, underlying
+distribution of the data), we initialize the Markov chain with a training
+example (i.e., from a distribution that is expected to be close to <img class="math" src="_images/math/36f73fc1312ee0349b3f3a0f3bd9eb5504339011.png" alt="p"/>,
+so that the chain will be already close to having converged to its final distribution <img class="math" src="_images/math/36f73fc1312ee0349b3f3a0f3bd9eb5504339011.png" alt="p"/>).</li>
+<li>CD does not wait for the chain to converge. Samples are obtained after only
+k-steps of Gibbs sampling. In pratice, <img class="math" src="_images/math/5ed8470bc717a49aafe4556c7e2c2e11ddc7b687.png" alt="k=1"/> has been shown to work
+surprisingly well.</li>
+</ul>
+</div>
+<div class="section" id="persistent-cd">
+<h3>Persistent CD<a class="headerlink" href="#persistent-cd" title="Permalink to this headline">¶</a></h3>
+<p>Persistent CD <a class="reference external" href="references.html#tieleman08">[Tieleman08]</a> uses another approximation for sampling from
+<img class="math" src="_images/math/7c0491c3f396412d34062e27ceccee3b6658f417.png" alt="p(v,h)"/>.  It relies on a single Markov chain, which has a persistent
+state (i.e., not restarting a chain for each observed example). For each
+parameter update, we extract new samples by simply running the chain for
+k-steps. The state of the chain is then preserved for subsequent updates.</p>
+<p>The general intuition is that if parameter updates are small enough compared
+to the mixing rate of the chain, the Markov chain should be able to &#8220;catch up&#8221;
+to changes in the model.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>We construct an <tt class="docutils literal"><span class="pre">RBM</span></tt> class. The parameters of the network can either be
+initialized by the constructor or can be passed as arguments. This option is
+useful when an RBM is used as the building block of a deep network, in which
+case the weight matrix and the hidden layer bias is shared with the
+corresponding sigmoidal layer of an MLP network.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">RBM</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Restricted Boltzmann Machine (RBM) &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">n_visible</span><span class="o">=</span><span class="mi">784</span><span class="p">,</span> <span class="n">n_hidden</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> \
+      <span class="n">W</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">hbias</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">vbias</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">numpy_rng</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+      <span class="n">theano_rng</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      RBM constructor. Defines the parameters of the model along with</span>
+<span class="sd">      basic operations for inferring hidden from visible (and vice-versa),</span>
+<span class="sd">      as well as for performing CD updates.</span>
+
+<span class="sd">      :param input: None for standalone RBMs or symbolic variable if RBM is</span>
+<span class="sd">      part of a larger graph.</span>
+
+<span class="sd">      :param n_visible: number of visible units</span>
+
+<span class="sd">      :param n_hidden: number of hidden units</span>
+
+<span class="sd">      :param W: None for standalone RBMs or symbolic variable pointing to a</span>
+<span class="sd">      shared weight matrix in case RBM is part of a DBN network; in a DBN,</span>
+<span class="sd">      the weights are shared between RBMs and layers of a MLP</span>
+
+<span class="sd">      :param hbias: None for standalone RBMs or symbolic variable pointing</span>
+<span class="sd">      to a shared hidden units bias vector in case RBM is part of a</span>
+<span class="sd">      different network</span>
+
+<span class="sd">      :param vbias: None for standalone RBMs or a symbolic variable</span>
+<span class="sd">      pointing to a shared visible units bias</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+
+      <span class="bp">self</span><span class="o">.</span><span class="n">n_visible</span> <span class="o">=</span> <span class="n">n_visible</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">n_hidden</span>  <span class="o">=</span> <span class="n">n_hidden</span>
+
+
+      <span class="k">if</span> <span class="n">numpy_rng</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+          <span class="c"># create a number generator</span>
+          <span class="n">numpy_rng</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">theano_rng</span> <span class="ow">is</span> <span class="bp">None</span> <span class="p">:</span>
+          <span class="n">theano_rng</span> <span class="o">=</span> <span class="n">RandomStreams</span><span class="p">(</span><span class="n">numpy_rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span>
+
+      <span class="k">if</span> <span class="n">W</span> <span class="ow">is</span> <span class="bp">None</span> <span class="p">:</span>
+         <span class="c"># W is initialized with `initial_W` which is uniformely sampled</span>
+         <span class="c"># from -4.*sqrt(6./(n_visible+n_hidden)) and 4.*sqrt(6./(n_hidden+n_visible))</span>
+         <span class="c"># the output of uniform if converted using asarray to dtype</span>
+         <span class="c"># theano.config.floatX so that the code is runable on GPU</span>
+         <span class="n">initial_W</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+                   <span class="n">low</span>   <span class="o">=</span> <span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_hidden</span><span class="o">+</span><span class="n">n_visible</span><span class="p">)),</span>
+                   <span class="n">high</span>  <span class="o">=</span>  <span class="mi">4</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="p">(</span><span class="n">n_hidden</span><span class="o">+</span><span class="n">n_visible</span><span class="p">)),</span>
+                   <span class="n">size</span>  <span class="o">=</span>  <span class="p">(</span><span class="n">n_visible</span><span class="p">,</span> <span class="n">n_hidden</span><span class="p">)),</span>
+                   <span class="n">dtype</span> <span class="o">=</span>  <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+         <span class="c"># theano shared variables for weights and biases</span>
+         <span class="n">W</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">initial_W</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">hbias</span> <span class="ow">is</span> <span class="bp">None</span> <span class="p">:</span>
+         <span class="c"># create shared variable for hidden units bias</span>
+         <span class="n">hbias</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_hidden</span><span class="p">,</span>
+                             <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;hbias&#39;</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">vbias</span> <span class="ow">is</span> <span class="bp">None</span> <span class="p">:</span>
+          <span class="c"># create shared variable for visible units bias</span>
+          <span class="n">vbias</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_visible</span><span class="p">,</span>
+                              <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">),</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;vbias&#39;</span><span class="p">)</span>
+
+
+      <span class="c"># initialize input layer for standalone RBM or layer0 of DBN</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span> <span class="k">if</span> <span class="nb">input</span> <span class="k">else</span> <span class="n">T</span><span class="o">.</span><span class="n">dmatrix</span><span class="p">(</span><span class="s">&#39;input&#39;</span><span class="p">)</span>
+
+      <span class="bp">self</span><span class="o">.</span><span class="n">W</span>          <span class="o">=</span> <span class="n">W</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">hbias</span>      <span class="o">=</span> <span class="n">hbias</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">vbias</span>      <span class="o">=</span> <span class="n">vbias</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">theano_rng</span> <span class="o">=</span> <span class="n">theano_rng</span>
+      <span class="c"># **** WARNING: It is not a good idea to put things in this list</span>
+      <span class="c"># other than shared variables created in this function.</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">params</span>     <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hbias</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vbias</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Next step is to define functions which construct the symbolic graph associated
+with Eqs. <a href="#equation-rbm_propup">(7)</a> - <a href="#equation-rbm_propdown">(8)</a>. The code is as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">propup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vis</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; This function propagates the visible units activation upwards to</span>
+<span class="sd">    the hidden units</span>
+
+<span class="sd">    Note that we return also the pre_sigmoid_activation of the layer. As</span>
+<span class="sd">    it will turn out later, due to how Theano deals with optimization and</span>
+<span class="sd">    stability this symbolic variable will be needed to write down a more</span>
+<span class="sd">    stable graph (see details in the reconstruction cost function)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">pre_sigmoid_activation</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hbias</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">pre_sigmoid_activation</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">pre_sigmoid_activation</span><span class="p">)]</span>
+
+<span class="k">def</span> <span class="nf">sample_h_given_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v0_sample</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; This function infers state of hidden units given visible units &#39;&#39;&#39;</span>
+    <span class="c"># compute the activation of the hidden units given a sample of the visibles</span>
+    <span class="n">pre_sigmoid_h1</span><span class="p">,</span> <span class="n">h1_mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">propup</span><span class="p">(</span><span class="n">v0_sample</span><span class="p">)</span>
+    <span class="c"># get a sample of the hiddens given their activation</span>
+    <span class="c"># Note that theano_rng.binomial returns a symbolic sample of dtype</span>
+    <span class="c"># int64 by default. If we want to keep our computations in floatX</span>
+    <span class="c"># for the GPU we need to specify to return the dtype floatX</span>
+    <span class="n">h1_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theano_rng</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="n">h1_mean</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">h1_mean</span><span class="p">,</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">pre_sigmoid_h1</span><span class="p">,</span> <span class="n">h1_mean</span><span class="p">,</span> <span class="n">h1_sample</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">propdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hid</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;This function propagates the hidden units activation downwards to</span>
+<span class="sd">    the visible units</span>
+
+<span class="sd">    Note that we return also the pre_sigmoid_activation of the layer. As</span>
+<span class="sd">    it will turn out later, due to how Theano deals with optimization and</span>
+<span class="sd">    stability this symbolic variable will be needed to write down a more</span>
+<span class="sd">    stable graph (see details in the reconstruction cost function)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">pre_sigmoid_activation</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vbias</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">pre_sigmoid_activation</span><span class="p">,</span><span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">pre_sigmoid_activation</span><span class="p">)]</span>
+
+<span class="k">def</span> <span class="nf">sample_v_given_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h0_sample</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; This function infers state of visible units given hidden units &#39;&#39;&#39;</span>
+    <span class="c"># compute the activation of the visible given the hidden sample</span>
+    <span class="n">pre_sigmoid_v1</span><span class="p">,</span> <span class="n">v1_mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">propdown</span><span class="p">(</span><span class="n">h0_sample</span><span class="p">)</span>
+    <span class="c"># get a sample of the visible given their activation</span>
+    <span class="c"># Note that theano_rng.binomial returns a symbolic sample of dtype</span>
+    <span class="c"># int64 by default. If we want to keep our computations in floatX</span>
+    <span class="c"># for the GPU we need to specify to return the dtype floatX</span>
+    <span class="n">v1_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theano_rng</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="n">v1_mean</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="n">p</span> <span class="o">=</span> <span class="n">v1_mean</span><span class="p">,</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">pre_sigmoid_v1</span><span class="p">,</span> <span class="n">v1_mean</span><span class="p">,</span> <span class="n">v1_sample</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We can then use these functions to define the symbolic graph for a Gibbs
+sampling step. We define two functions:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">gibbs_vhv</span></tt> which performs a step of Gibbs sampling starting from the
+visible units. As we shall see, this will be useful for sampling from the
+RBM.</li>
+<li><tt class="docutils literal"><span class="pre">gibbs_hvh</span></tt> which performs a step of Gibbs sampling starting from the hidden units.
+This function will be useful for performing CD and PCD updates.</li>
+</ul>
+<p>The code is as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">gibbs_hvh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h0_sample</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; This function implements one step of Gibbs sampling,</span>
+<span class="sd">        starting from the hidden state&#39;&#39;&#39;</span>
+    <span class="n">pre_sigmoid_v1</span><span class="p">,</span> <span class="n">v1_mean</span><span class="p">,</span> <span class="n">v1_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_v_given_h</span><span class="p">(</span><span class="n">h0_sample</span><span class="p">)</span>
+    <span class="n">pre_sigmoid_h1</span><span class="p">,</span> <span class="n">h1_mean</span><span class="p">,</span> <span class="n">h1_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_h_given_v</span><span class="p">(</span><span class="n">v1_sample</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">pre_sigmoid_v1</span><span class="p">,</span> <span class="n">v1_mean</span><span class="p">,</span> <span class="n">v1_sample</span><span class="p">,</span> <span class="n">pre_sigmoid_h1</span><span class="p">,</span> <span class="n">h1_mean</span><span class="p">,</span> <span class="n">h1_sample</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">gibbs_vhv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v0_sample</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; This function implements one step of Gibbs sampling,</span>
+<span class="sd">        starting from the visible state&#39;&#39;&#39;</span>
+    <span class="n">pre_sigmoid_h1</span><span class="p">,</span> <span class="n">h1_mean</span><span class="p">,</span> <span class="n">h1_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_h_given_v</span><span class="p">(</span><span class="n">v0_sample</span><span class="p">)</span>
+    <span class="n">pre_sigmoid_v1</span><span class="p">,</span> <span class="n">v1_mean</span><span class="p">,</span> <span class="n">v1_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_v_given_h</span><span class="p">(</span><span class="n">h1_sample</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">pre_sigmoid_h1</span><span class="p">,</span> <span class="n">h1_mean</span><span class="p">,</span> <span class="n">h1_sample</span><span class="p">,</span> <span class="n">pre_sigmoid_v1</span><span class="p">,</span> <span class="n">v1_mean</span><span class="p">,</span> <span class="n">v1_sample</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Note that we also return the pre-sigmoid
+activation. To understand why this is so you need to understand a bit about
+how Theano works. Whenever you compile a Theano function, the computational
+graph that you pass as input gets optimized for speed and stability. This
+is done by changing several parts of the subgraphs with others. One
+such optimization expresses terms of the form log(sigmoid(x)) in terms of
+softplus. We need this optimization for the cross-entropy since sigmoid of
+numbers larger than 30. (or even less then that) turn to 1. and numbers
+smaller than  -30. turn to 0 which in terms will force theano
+to compute log(0) and therefore we will get either -inf or NaN
+as cost. If the value is expressed in terms of softplus we do
+not get this undesirable behaviour. This optimization usually works
+fine, but here we have a special case. The sigmoid is applied inside
+the scan op, while the log is outside. Therefore Theano will only
+see log(scan(..)) instead of log(sigmoid(..)) and will not apply
+the wanted optimization. We can not go and replace the sigmoid
+in scan with something else also, because this only needs to be
+done on the last step. Therefore the easiest and more efficient way
+is to get also the pre-sigmoid activation as an output of scan,
+and apply both the log and sigmoid outside scan such that Theano
+can catch and optimize the expression.</p>
+<p>The class also has a function that computes the free energy of the model,
+needed for computing the gradient of the parameters
+(see Eq. <a href="#equation-free_energy_grad">(4)</a>). Note that we also return the pre-sigmoid</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">free_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_sample</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Function to compute the free energy &#39;&#39;&#39;</span>
+    <span class="n">wx_b</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v_sample</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hbias</span>
+    <span class="n">vbias_term</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v_sample</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vbias</span><span class="p">)</span>
+    <span class="n">hidden_term</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">T</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">wx_b</span><span class="p">)),</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">hidden_term</span> <span class="o">-</span> <span class="n">vbias_term</span>
+</pre></div>
+</div>
+<p>We then add a <tt class="docutils literal"><span class="pre">get_cost_updates</span></tt> method, whose purpose is to generate the symbolic
+gradients for CD-k and PCD-k updates.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_cost_updates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This functions implements one step of CD-k or PCD-k</span>
+
+<span class="sd">    :param lr: learning rate used to train the RBM</span>
+
+<span class="sd">    :param persistent: None for CD. For PCD, shared variable containing old state</span>
+<span class="sd">    of Gibbs chain. This must be a shared variable of size (batch size, number of</span>
+<span class="sd">    hidden units).</span>
+
+<span class="sd">    :param k: number of Gibbs steps to do in CD-k/PCD-k</span>
+
+<span class="sd">    Returns a proxy for the cost and the updates dictionary. The</span>
+<span class="sd">    dictionary contains the update rules for weights and biases but</span>
+<span class="sd">    also an update of the shared variable used to store the persistent</span>
+<span class="sd">    chain, if one is used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># compute positive phase</span>
+    <span class="n">pre_sigmoid_ph</span><span class="p">,</span> <span class="n">ph_mean</span><span class="p">,</span> <span class="n">ph_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_h_given_v</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+
+    <span class="c"># decide how to initialize persistent chain:</span>
+    <span class="c"># for CD, we use the newly generate hidden sample</span>
+    <span class="c"># for PCD, we initialize from the old state of the chain</span>
+    <span class="k">if</span> <span class="n">persistent</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">chain_start</span> <span class="o">=</span> <span class="n">ph_sample</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">chain_start</span> <span class="o">=</span> <span class="n">persistent</span>
+</pre></div>
+</div>
+<p>Note that <tt class="docutils literal"><span class="pre">get_cost_updates</span></tt> takes as argument a variable called <tt class="docutils literal"><span class="pre">persistent</span></tt>. This allows us to use the same code to implement both CD and PCD.
+To use PCD, <tt class="docutils literal"><span class="pre">persistent</span></tt> should refer to a shared variable which contains the
+state of the Gibbs chain from the previous iteration.</p>
+<p>If <tt class="docutils literal"><span class="pre">persistent</span></tt> is <tt class="xref docutils literal"><span class="pre">None</span></tt>, we initialize the Gibbs chain with the hidden
+sample generated during the positive phase, therefore implementing CD. Once we have established the
+starting point of the chain, we can then compute the sample at the end of the
+Gibbs chain, sample that we need for getting the gradient (see  Eq. <a href="#equation-free_energy_grad">(4)</a>). To do so, we will use the <tt class="docutils literal"><span class="pre">scan</span></tt>
+op provided by Theano, therefore we urge the reader to look it up by following this <a class="reference external" href="http://deeplearning.net/software/theano/library/scan.html">link</a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># perform actual negative phase</span>
+<span class="c"># in order to implement CD-k/PCD-k we need to scan over the</span>
+<span class="c"># function that implements one gibbs step k times.</span>
+<span class="c"># Read Theano tutorial on scan for more information :</span>
+<span class="c"># http://deeplearning.net/software/theano/library/scan.html</span>
+<span class="c"># the scan will return the entire Gibbs chain</span>
+<span class="p">[</span><span class="n">pre_sigmoid_nvs</span><span class="p">,</span> <span class="n">nv_means</span><span class="p">,</span> <span class="n">nv_samples</span><span class="p">,</span> <span class="n">pre_sigmoid_nhs</span><span class="p">,</span> <span class="n">nh_means</span><span class="p">,</span> <span class="n">nh_samples</span><span class="p">],</span> <span class="n">updates</span> <span class="o">=</span> \
+    <span class="n">theano</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gibbs_hvh</span><span class="p">,</span>
+            <span class="c"># the None are place holders, saying that</span>
+            <span class="c"># chain_start is the initial state corresponding to the</span>
+            <span class="c"># 6th output</span>
+            <span class="n">outputs_info</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="n">chain_start</span><span class="p">],</span>
+            <span class="n">n_steps</span> <span class="o">=</span> <span class="n">k</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once we have the generated the chain we take the sample at the end of the
+chain to get the free energy of the negative phase. Note that the
+<tt class="docutils literal"><span class="pre">chain_end</span></tt> is a symbolical Theano variable expressed in terms of the model
+parameters, and if we would apply <tt class="docutils literal"><span class="pre">T.grad</span></tt> naively, the function will
+try to go through the Gibbs chain to get the gradients. This is not what we
+want (it will mess up our gradients) and therefire we need to indicate to
+<tt class="docutils literal"><span class="pre">T.grad</span></tt> that <tt class="docutils literal"><span class="pre">chain_end</span></tt> is a constant. We do this by using the argument
+<tt class="docutils literal"><span class="pre">consider_constant</span></tt> of <tt class="docutils literal"><span class="pre">T.grad</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># determine gradients on RBM parameters</span>
+<span class="c"># note that we only need the sample at the end of the chain</span>
+<span class="n">chain_end</span> <span class="o">=</span> <span class="n">nv_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">cost</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">))</span> <span class="o">-</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free_energy</span><span class="p">(</span><span class="n">chain_end</span><span class="p">))</span>
+<span class="c"># We must not compute the gradient through the gibbs sampling</span>
+<span class="n">gparams</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span><span class="n">consider_constant</span> <span class="o">=</span> <span class="p">[</span><span class="n">chain_end</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Finally, we add to the updates dictionary returned by scan (which contains
+updates rules for random states of <tt class="docutils literal"><span class="pre">theano_rng</span></tt>) to contain the parameter
+updates. In the case of PCD, these should also update the shared variable
+containing the state of the Gibbs chain.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># constructs the update dictionary</span>
+<span class="k">for</span> <span class="n">gparam</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">gparams</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">):</span>
+    <span class="c"># make sure that the learning rate is of the right dtype</span>
+    <span class="n">updates</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span> <span class="o">-</span> <span class="n">gparam</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">lr</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">persistent</span><span class="p">:</span>
+    <span class="c"># Note that this works only if persistent is a shared variable</span>
+    <span class="n">updates</span><span class="p">[</span><span class="n">persistent</span><span class="p">]</span> <span class="o">=</span> <span class="n">nh_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c"># pseudo-likelihood is a better proxy for PCD</span>
+    <span class="n">monitoring_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pseudo_likelihood_cost</span><span class="p">(</span><span class="n">updates</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c"># reconstruction cross-entropy is a better proxy for CD</span>
+    <span class="n">monitoring_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reconstruction_cost</span><span class="p">(</span><span class="n">updates</span><span class="p">,</span> <span class="n">pre_sigmoid_nvs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="k">return</span> <span class="n">monitoring_cost</span><span class="p">,</span> <span class="n">updates</span>
+</pre></div>
+</div>
+<div class="section" id="tracking-progress">
+<h3>Tracking Progress<a class="headerlink" href="#tracking-progress" title="Permalink to this headline">¶</a></h3>
+<p>RBMs are particularly tricky to train. Because of the partition function
+<img class="math" src="_images/math/3ead47fb9fb4a4c273feee398f72ff2a09702b84.png" alt="Z"/> of Eq. <a href="#equation-energy1">(1)</a>, we cannot estimate the log-likelihood
+<img class="math" src="_images/math/d6514091c5be3e55375ee4b99f25ec0e21325f2f.png" alt="\log(P(x))"/> during training. We therefore have no direct useful metric
+for choosing the optimal hyperparameters.</p>
+<p>Several options are available to the user.</p>
+<p><strong>Inspection of Negative Samples</strong></p>
+<p>Negative samples obtained during training can be visualized. As training
+progresses, we know that the model defined by the RBM becomes closer to the
+true underlying distribution, <img class="math" src="_images/math/09421846bd4648c292dc2f0a38c68bb91154b8e7.png" alt="p_{train}(x)"/>. Negative samples should thus
+look like samples from the training set. Obviously bad hyperparameters can be
+discarded in this fashion.</p>
+<p><strong>Visual Inspection of Filters</strong></p>
+<p>The filters learnt by the model can be visualized. This amounts to plotting
+the weights of each unit as a gray-scale image (after reshaping to a square
+matrix). Filters should pick out strong features in the data. While it is not
+clear for an arbitrary dataset, what these features should look like, training
+on MNIST usually results in filters which act as stroke detectors, while
+training on natural images lead to Gabor like filters if trained in
+conjunction with a sparsity criteria.</p>
+<p><strong>Proxies to Likelihood</strong></p>
+<p>Other, more tractable functions can be used as a proxy to the likelihood.  When
+training an RBM with PCD, one can use pseudo-likelihood as the proxy.
+Pseudo-likelihood (PL) is much less expensive to compute, as it assumes that
+all bits are independent. Therefore,</p>
+<div class="math">
+<p><img src="_images/math/06c13b59ddbc03b4510e1ec0f46525fb7b6d5609.png" alt="PL(x) = \prod_i P(x_i | x_{-i}) \text{ and }\\
+\log PL(x) = \sum_i \log P(x_i | x_{-i})" /></p>
+</div><p>Here <img class="math" src="_images/math/2e55651f602d9114cb07abcf155cd8de675794ae.png" alt="x_{-i}"/> denotes the set of all bits of <img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/> except bit
+<img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/>. The log-PL is therefore the sum of the log-probabilities of each
+bit <img class="math" src="_images/math/67bc6daa9d6b964201d6cef60cbeb1ac5fd26ead.png" alt="x_i"/>, conditionned on the state of all other bits. For MNIST, this
+would involve summing over the 784 input dimensions, which remains rather
+expensive. For this reason, we use the following stochastic approximation to
+log-PL:</p>
+<div class="math">
+<p><img src="_images/math/2b305ad6f7a848aca740a54b0c47fbf057ebd1d6.png" alt="g = N \cdot \log P(x_i | x_{-i}) \text{, where } i \sim U(0,N), \text{, and}\\
+E[ g ] = \log PL(x)" /></p>
+</div><p>where the expectation is taken over the uniform random choice of index <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/>,
+and <img class="math" src="_images/math/fc97ef67268cd4e91bacdf12b8901d7036c9a056.png" alt="N"/> is the number of visible units. In order to work with binary
+units, we further introduce the notation <img class="math" src="_images/math/e03e5b4f0758d4945a84d527bf0776e5d1c2616c.png" alt="\tilde{x}_i"/> to refer to
+<img class="math" src="_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x"/> with bit-i being flipped (1-&gt;0, 0-&gt;1). The log-PL for an RBM with binary unit is
+then written as:</p>
+<div class="math">
+<p><img src="_images/math/d6ed291cefcbb3b013236f91174f75fb0dcd0b7d.png" alt="\log PL(x) &amp;\approx N \cdot \log
+   \frac {e^{-FE(x)}} {e^{-FE(x)} + e^{-FE(\tilde{x}_i)}} \\
+&amp;\approx N \cdot \log[ sigm (FE(\tilde{x}_i) - FE(x)) ]" /></p>
+</div><p>We therefore return this cost as well as the RBM updates in the  <img class="math" src="_images/math/979ea8b7c6820336ef280e59a7415b917f53290f.png" alt="get_cost_updates"/> function of the <img class="math" src="_images/math/7a8ca3e09ffe6058def95050f185e7445661ceee.png" alt="RBM"/> class.
+Notice that we modify the updates dictionary to increment the
+index of bit <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/>. This will result in bit i cycling over all possible
+values <img class="math" src="_images/math/40af70179bee2ff824f73ccceb6d83e3eb383a19.png" alt="\{0,1,...,N\}"/>, from one update to another.</p>
+<p>Note that for CD training the cost-entropy cost between the input and the
+reconstruction( the same as the one used for the de-noising autoencoder) is more reliable then the pseudo-loglikelihood. Here is the code we use to
+compute the pseudo-likelihood:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_pseudo_likelihood_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Stochastic approximation to the pseudo-likelihood&quot;&quot;&quot;</span>
+
+    <span class="c"># index of bit i in expression p(x_i | x_{\i})</span>
+    <span class="n">bit_i_idx</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;bit_i_idx&#39;</span><span class="p">)</span>
+
+    <span class="c"># binarize the input image by rounding to nearest integer</span>
+    <span class="n">xi</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">iround</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+
+    <span class="c"># calculate free energy for the given bit configuration</span>
+    <span class="n">fe_xi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_energy</span><span class="p">(</span><span class="n">xi</span><span class="p">)</span>
+
+    <span class="c"># flip bit x_i of matrix xi and preserve all other bits x_{\i}</span>
+    <span class="c"># Equivalent to xi[:,bit_i_idx] = 1-xi[:, bit_i_idx], but assigns</span>
+    <span class="c"># the result to xi_flip, instead of working in place on xi.</span>
+    <span class="n">xi_flip</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">set_subtensor</span><span class="p">(</span><span class="n">xi</span><span class="p">[:,</span><span class="n">bit_i_idx</span><span class="p">],</span> <span class="mi">1</span><span class="o">-</span><span class="n">xi</span><span class="p">[:,</span><span class="n">bit_i_idx</span><span class="p">])</span>
+
+    <span class="c"># calculate free energy with bit flipped</span>
+    <span class="n">fe_xi_flip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_energy</span><span class="p">(</span><span class="n">xi_flip</span><span class="p">)</span>
+
+    <span class="c"># equivalent to e^(-FE(x_i)) / (e^(-FE(x_i)) + e^(-FE(x_{\i})))</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_visible</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">nnet</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">fe_xi_flip</span> <span class="o">-</span> <span class="n">fe_xi</span><span class="p">)))</span>
+
+    <span class="c"># increment bit_i_idx % number as part of updates</span>
+    <span class="n">updates</span><span class="p">[</span><span class="n">bit_i_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">bit_i_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_visible</span>
+
+    <span class="k">return</span> <span class="n">cost</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="main-loop">
+<h3>Main Loop<a class="headerlink" href="#main-loop" title="Permalink to this headline">¶</a></h3>
+<p>We now have all the necessary ingredients to start training our network.</p>
+<p>Before going over the training loop however, the reader should familiarize
+himself with the function <tt class="docutils literal"><span class="pre">tile_raster_images</span></tt> (see <a class="reference external" href="utilities.html#how-to-plot"><em>Plotting Samples and Filters</em></a>). Since
+RBMs are generative models, we are interested in sampling from them and
+plotting/visualizing these samples. We also want to visualize the filters
+(weights) learnt by the RBM, to gain insights into what the RBM is actually
+doing. Bare in mind however, that this does not provide the entire story,
+since we neglect the biases and plot the weights up to a multiplicative
+constant (weights are converted to values between 0 and 1).</p>
+<p>Having these utility functions, we can start training the RBM and plot/save
+the filters after each training epoch.  We train the RBM using PCD, as it has
+been shown to lead to a better generative model (<a class="reference external" href="references.html#tieleman08">[Tieleman08]</a>).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># it is ok for a theano function to have no output</span>
+<span class="c"># the purpose of train_rbm is solely to update the RBM parameters</span>
+<span class="n">train_rbm</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([</span><span class="n">index</span><span class="p">],</span> <span class="n">cost</span><span class="p">,</span>
+       <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">,</span>
+       <span class="n">givens</span> <span class="o">=</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="n">train_set_x</span><span class="p">[</span><span class="n">index</span><span class="o">*</span><span class="n">batch_size</span><span class="p">:(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">]})</span>
+
+<span class="n">plotting_time</span> <span class="o">=</span> <span class="mf">0.</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+
+<span class="c"># go through training epochs</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">training_epochs</span><span class="p">):</span>
+
+    <span class="c"># go through the training set</span>
+    <span class="n">mean_cost</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">batch_index</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">):</span>
+       <span class="n">mean_cost</span> <span class="o">+=</span> <span class="p">[</span><span class="n">train_rbm</span><span class="p">(</span><span class="n">batch_index</span><span class="p">)]</span>
+
+    <span class="k">print</span> <span class="s">&#39;Training epoch </span><span class="si">%d</span><span class="s">, cost is &#39;</span><span class="o">%</span><span class="n">epoch</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mean_cost</span><span class="p">)</span>
+
+    <span class="c"># Plot filters after each training epoch</span>
+    <span class="n">plotting_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="c"># Construct image from the weight matrix</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">PIL</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">tile_raster_images</span><span class="p">(</span>
+             <span class="n">X</span> <span class="o">=</span> <span class="n">rbm</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+             <span class="n">img_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">28</span><span class="p">,</span><span class="mi">28</span><span class="p">),</span><span class="n">tile_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span>
+             <span class="n">tile_spacing</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;filters_at_epoch_</span><span class="si">%i</span><span class="s">.png&#39;</span><span class="o">%</span><span class="n">epoch</span><span class="p">)</span>
+    <span class="n">plotting_stop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">plotting_time</span> <span class="o">+=</span> <span class="p">(</span><span class="n">plotting_stop</span> <span class="o">-</span> <span class="n">plotting_start</span><span class="p">)</span>
+
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+<span class="n">pretraining_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">-</span> <span class="n">plotting_time</span>
+
+<span class="k">print</span> <span class="p">(</span><span class="s">&#39;Training took </span><span class="si">%f</span><span class="s"> minutes&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">pretraining_time</span><span class="o">/</span><span class="mf">60.</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Once the RBM is trained, we can then use the <tt class="docutils literal"><span class="pre">gibbs_vhv</span></tt> function to implement
+the Gibbs chain required for sampling. We initialize the Gibbs chain starting
+from test examples (although we could as well pick it from the training set)
+in order to speed up convergence and avoid problems with random
+initialization. We again use Theano&#8217;s <tt class="docutils literal"><span class="pre">scan</span></tt> op to do 1000 steps before
+each plotting.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#################################</span>
+<span class="c">#     Sampling from the RBM     #</span>
+<span class="c">#################################</span>
+
+<span class="c"># find out the number of test samples</span>
+<span class="n">number_of_test_samples</span> <span class="o">=</span> <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># pick random test examples, with which to initialize the persistent chain</span>
+<span class="n">test_idx</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">number_of_test_samples</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">persistent_vis_chain</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+    <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="n">test_idx</span><span class="p">:</span><span class="n">test_idx</span><span class="o">+</span><span class="mi">20</span><span class="p">],</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Next we create the 20 persistent chains in parallel to get our
+samples. To do so, we compile a theano function which performs one Gibbs step
+and updates the state of the persistent chain with the new visible sample. We
+apply this function iteratively for a large number of steps, plotting the
+samples at every 1000 steps.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># find out the number of test</span>
+<span class="n">number_of_test_samples</span> <span class="o">=</span> <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># pick random test examples, with which to initialize the persistent chain</span>
+<span class="n">test_idx</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">number_of_test_samples</span><span class="o">-</span><span class="n">n_chains</span><span class="p">)</span>
+<span class="n">persistent_vis_chain</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="n">test_set_x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="n">test_idx</span><span class="p">:</span><span class="n">test_idx</span><span class="o">+</span><span class="mi">100</span><span class="p">],</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+
+<span class="n">plot_every</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="c"># define one step of Gibbs sampling (mf = mean-field)</span>
+<span class="c"># define a function that does `plot_every` steps before returning the sample for plotting</span>
+<span class="p">[</span><span class="n">presig_hids</span><span class="p">,</span> <span class="n">hid_mfs</span><span class="p">,</span> <span class="n">hid_samples</span><span class="p">,</span> <span class="n">presig_vis</span><span class="p">,</span> <span class="n">vis_mfs</span><span class="p">,</span> <span class="n">vis_samples</span><span class="p">],</span> <span class="n">updates</span> <span class="o">=</span>  \
+                    <span class="n">theano</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">rbm</span><span class="o">.</span><span class="n">gibbs_vhv</span><span class="p">,</span>
+                            <span class="n">outputs_info</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="n">persistent_vis_chain</span><span class="p">],</span>
+                            <span class="n">n_steps</span> <span class="o">=</span> <span class="n">plot_every</span><span class="p">)</span>
+
+<span class="c"># add to updates the shared variable that takes care of our persistent</span>
+<span class="c"># chain :</span>
+<span class="n">updates</span><span class="o">.</span><span class="n">update</span><span class="p">({</span> <span class="n">persistent_vis_chain</span><span class="p">:</span> <span class="n">vis_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]})</span>
+<span class="c"># construct the function that implements our persistent chain</span>
+<span class="c"># we generate the &quot;mean field&quot; activations for plotting and the actual samples for</span>
+<span class="c"># reinitializing the state of our persistent chain</span>
+<span class="n">sample_fn</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([],</span> <span class="p">[</span><span class="n">vis_mfs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">vis_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                  <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">)</span>
+
+<span class="c"># sample the RBM, plotting at least `n_samples`</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="c"># create a space to store the image for plotting ( we need to leave</span>
+<span class="c"># room for the tile_spacing as well)</span>
+<span class="n">image_data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">29</span><span class="o">*</span><span class="n">n_samples</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">29</span><span class="o">*</span><span class="n">n_chains</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="s">&#39;uint8&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+    <span class="c"># generate `plot_every` intermediate samples that we discard, because successive samples in the chain are too correlated</span>
+    <span class="n">vis_mf</span><span class="p">,</span> <span class="n">vis_sample</span> <span class="o">=</span> <span class="n">sample_fn</span><span class="p">()</span>
+    <span class="n">image_data</span><span class="p">[</span><span class="mi">29</span><span class="o">*</span><span class="n">idx</span><span class="p">:</span><span class="mi">29</span><span class="o">*</span><span class="n">idx</span><span class="o">+</span><span class="mi">28</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">tile_raster_images</span><span class="p">(</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">vis_mf</span><span class="p">,</span>
+            <span class="n">img_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">28</span><span class="p">,</span><span class="mi">28</span><span class="p">),</span>
+            <span class="n">tile_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">),</span>
+            <span class="n">tile_spacing</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c"># construct image</span>
+
+<span class="n">image</span> <span class="o">=</span> <span class="n">PIL</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">image_data</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39; ... plotting sample &#39;</span><span class="p">,</span> <span class="n">idx</span>
+<span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s">&#39;samples.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="results">
+<h2>Results<a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h2>
+<p>We ran the code with PCD-15, learning rate of 0.1 and a batch size of 20, for
+15 epochs. Training the model takes 122.466 minutes on a Intel Xeon E5430 &#64;
+2.66GHz CPU, with a single-threaded GotoBLAS.</p>
+<p>The output was the following:</p>
+<div class="highlight-bash"><div class="highlight"><pre>... loading data
+Training epoch 0, cost is  -90.6507246003
+Training epoch 1, cost is  -81.235857373
+Training epoch 2, cost is  -74.9120966945
+Training epoch 3, cost is  -73.0213216101
+Training epoch 4, cost is  -68.4098570497
+Training epoch 5, cost is  -63.2693021647
+Training epoch 6, cost is  -65.99578971
+Training epoch 7, cost is  -68.1236650015
+Training epoch 8, cost is  -68.3207365087
+Training epoch 9, cost is  -64.2949797113
+Training epoch 10, cost is  -61.5194867893
+Training epoch 11, cost is  -61.6539369402
+Training epoch 12, cost is  -63.5465278086
+Training epoch 13, cost is  -63.3787093527
+Training epoch 14, cost is  -62.755739271
+Training took 122.466000 minutes
+ ... plotting sample  0
+ ... plotting sample  1
+ ... plotting sample  2
+ ... plotting sample  3
+ ... plotting sample  4
+ ... plotting sample  5
+ ... plotting sample  6
+ ... plotting sample  7
+ ... plotting sample  8
+ ... plotting sample  9
+</pre></div>
+</div>
+<p>The pictures below show the filters after 15 epochs :</p>
+<div class="figure align-center">
+<img alt="_images/filters_at_epoch_14.png" src="_images/filters_at_epoch_14.png" />
+<p class="caption">Filters obtained after 15 epochs.</p>
+</div>
+<p>Here are the samples generated by the RBM after training. Each row
+represents a mini-batch of negative particles (samples from independent Gibbs
+chains). 1000 steps of Gibbs sampling were taken between each of those rows.</p>
+<div class="figure align-center">
+<img alt="_images/samples.png" src="_images/samples.png" />
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="DBN.html" title="Deep Belief Networks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="SdA.html" title="Stacked Denoising Autoencoders (SdA)"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

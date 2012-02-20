@@ -1,0 +1,732 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Getting Started &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Classifying MNIST digits using Logistic Regression" href="logreg.html" />
+    <link rel="prev" title="Deep Learning Tutorials" href="intro.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="logreg.html" title="Classifying MNIST digits using Logistic Regression"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Deep Learning Tutorials"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="contents.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Getting Started</a><ul>
+<li><a class="reference external" href="#index-0">Download</a></li>
+<li><a class="reference external" href="#index-1">Datasets</a><ul>
+<li><a class="reference external" href="#mnist-dataset">MNIST Dataset</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#notation">Notation</a><ul>
+<li><a class="reference external" href="#dataset-notation">Dataset notation</a></li>
+<li><a class="reference external" href="#math-conventions">Math Conventions</a></li>
+<li><a class="reference external" href="#list-of-symbols-and-acronyms">List of Symbols and acronyms</a></li>
+<li><a class="reference external" href="#python-namespaces">Python Namespaces</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#a-primer-on-supervised-optimization-for-deep-learning">A Primer on Supervised Optimization for Deep Learning</a><ul>
+<li><a class="reference external" href="#learning-a-classifier">Learning a Classifier</a><ul>
+<li><a class="reference external" href="#zero-one-loss">Zero-One Loss</a></li>
+<li><a class="reference external" href="#negative-log-likelihood-loss">Negative Log-Likelihood Loss</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#stochastic-gradient-descent">Stochastic Gradient Descent</a></li>
+<li><a class="reference external" href="#regularization">Regularization</a><ul>
+<li><a class="reference external" href="#l1-and-l2-regularization">L1 and L2 regularization</a></li>
+<li><a class="reference external" href="#early-stopping">Early-Stopping</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#testing">Testing</a></li>
+<li><a class="reference external" href="#recap">Recap</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#theano-python-tips">Theano/Python Tips</a><ul>
+<li><a class="reference external" href="#loading-and-saving-models">Loading and Saving Models</a></li>
+<li><a class="reference external" href="#plotting-intermediate-results">Plotting Intermediate Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="intro.html"
+                                  title="previous chapter">Deep Learning Tutorials</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="logreg.html"
+                                  title="next chapter">Classifying MNIST digits using Logistic Regression</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/gettingstarted.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="getting-started">
+<span id="gettingstarted"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>These tutorials do not attempt to make up for a graduate or undergraduate course
+in machine learning, but we do make a rapid overview of some important concepts
+(and notation) to make sure that we&#8217;re on the same page.  You&#8217;ll also need to
+download the datasets mentioned in this chapter in order to run the example code of
+the up-coming tutorials.</p>
+<span class="target" id="download"></span><div class="section" id="index-0">
+<span id="id1"></span><h2>Download<a class="headerlink" href="#index-0" title="Permalink to this headline">¶</a></h2>
+<p>On each learning algorithm page, you will be able to download the corresponding files. If you want to download all of them at the same time, you can clone the git repository of the tutorial:</p>
+<div class="highlight-python"><pre>git clone git://github.com/lisa-lab/DeepLearningTutorials.git</pre>
+</div>
+<span class="target" id="datasets"></span></div>
+<div class="section" id="index-1">
+<span id="id2"></span><h2>Datasets<a class="headerlink" href="#index-1" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="mnist-dataset">
+<span id="index-2"></span><h3>MNIST Dataset<a class="headerlink" href="#mnist-dataset" title="Permalink to this headline">¶</a></h3>
+<p>(<a class="reference external" href="http://deeplearning.net/data/mnist/mnist.pkl.gz">mnist.pkl.gz</a>)</p>
+<blockquote>
+<p>The <a class="reference external" href="http://yann.lecun.com/exdb/mnist">MNIST</a> dataset consists of handwritten
+digit images and it is divided in 60,000 examples for the training set and
+10,000 examples for testing. In many papers as well as in this tutorial, the
+official training set of 60,000 is divided into an actual training set of 50,000
+examples and 10,000 validation examples (for selecting hyper-parameters like
+learning rate and size of the model). All digit images have been size-normalized and
+centered in a fixed size image of 28 x 28 pixels. In the original dataset
+each pixel of the image is represented by a value between 0 and 255, where
+0 is black, 255 is  white and anything in between is a different shade of grey.</p>
+<p>Here are some examples of MNIST digits:</p>
+<blockquote>
+<img alt="0" src="_images/mnist_0.png" /> <img alt="1" src="_images/mnist_1.png" /> <img alt="2" src="_images/mnist_2.png" /> <img alt="3" src="_images/mnist_3.png" /> <img alt="4" src="_images/mnist_4.png" /> <img alt="5" src="_images/mnist_5.png" /></blockquote>
+<p>For convenience we pickled the dataset to make it easier to use in python.
+It is available for download <a class="reference external" href="http://deeplearning.net/data/mnist/mnist.pkl.gz">here</a>.
+The pickled file represents a tuple of 3 lists : the training set, the
+validation set and the testing set. Each of the three lists is a pair
+formed from a list of images and a list of class labels for each of the
+images. An image is represented as numpy 1-dimensional array of 784 (28
+x 28) float values between 0 and 1 (0 stands for black, 1 for white).
+The labels are numbers between 0 and 9 indicating which digit the image
+represents. The code block below shows how to load the dataset.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">cPickle</span><span class="o">,</span> <span class="nn">gzip</span><span class="o">,</span> <span class="nn">numpy</span>
+
+<span class="c"># Load the dataset</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;mnist.pkl.gz&#39;</span><span class="p">,</span><span class="s">&#39;rb&#39;</span><span class="p">)</span>
+<span class="n">train_set</span><span class="p">,</span> <span class="n">valid_set</span><span class="p">,</span> <span class="n">test_set</span> <span class="o">=</span> <span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>When using the dataset, we usually divide it in minibatches (see
+<a class="reference internal" href="#opt-sgd"><em>Stochastic Gradient Descent</em></a>). We encourage you to store the dataset into shared
+variables and access it based on the minibatch index, given a fixed
+and known batch size. The reason behind shared variables is
+related to using the GPU. There is a large overhead when copying data
+into the GPU memory. If you would copy data on request ( each minibatch
+individually when needed) as the code will do if you do not use shared
+variables, due to this overhead, the GPU code will not be much faster
+then the CPU code (maybe even slower). If you have your data in
+Theano shared variables though, you give Theano the possibility to copy
+the entire data on the GPU in a single call when the shared variables are constructed.
+Afterwards the GPU can access any minibatch by taking a slice from this
+shared variables, without needing to copy any information from the CPU
+memory and therefore bypassing the overhead.
+Because the datapoints and their labels are usually of different nature
+(labels are usually integers while datapoints are real numbers) we
+suggest to use different variables for labes and data. Also we recomand
+using different variables for the training set, validation set and
+testing set to make the code more readable (resulting in 6 different
+shared variables).</p>
+<p>Since now the data is in one variable, and a minibatch is defined as a
+slice of that variable, it comes more natural to define a minibatch by
+indicating its index and its size. In our setup the batch size stays constant
+through out the execution of the code, therefore a function will actually
+require only the index to identify on which datapoints to work.
+The code below shows how to store your data and how to
+access a minibatch:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">shared_dataset</span><span class="p">(</span><span class="n">data_xy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function that loads the dataset into shared variables</span>
+
+<span class="sd">    The reason we store our dataset in shared variables is to allow</span>
+<span class="sd">    Theano to copy it into the GPU memory (when code is run on GPU).</span>
+<span class="sd">    Since copying data into the GPU is slow, copying a minibatch everytime</span>
+<span class="sd">    is needed (the default behaviour if the data is not in a shared</span>
+<span class="sd">    variable) would lead to a large decrease in performance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data_x</span><span class="p">,</span> <span class="n">data_y</span> <span class="o">=</span> <span class="n">data_xy</span>
+    <span class="n">shared_x</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data_x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+    <span class="n">shared_y</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data_y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">theano</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">))</span>
+    <span class="c"># When storing data on the GPU it has to be stored as floats</span>
+    <span class="c"># therefore we will store the labels as ``floatX`` as well</span>
+    <span class="c"># (``shared_y`` does exactly that). But during our computations</span>
+    <span class="c"># we need them as ints (we use labels as index, and if they are</span>
+    <span class="c"># floats it doesn&#39;t make sense) therefore instead of returning</span>
+    <span class="c"># ``shared_y`` we will have to cast it to int. This little hack</span>
+    <span class="c"># lets us get around this issue</span>
+    <span class="k">return</span> <span class="n">shared_x</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">shared_y</span><span class="p">,</span> <span class="s">&#39;int32&#39;</span><span class="p">)</span>
+
+<span class="n">test_set_x</span><span class="p">,</span> <span class="n">test_set_y</span> <span class="o">=</span> <span class="n">shared_dataset</span><span class="p">(</span><span class="n">test_set</span><span class="p">)</span>
+<span class="n">valid_set_x</span><span class="p">,</span> <span class="n">valid_set_y</span> <span class="o">=</span> <span class="n">shared_dataset</span><span class="p">(</span><span class="n">valid_set</span><span class="p">)</span>
+<span class="n">train_set_x</span><span class="p">,</span> <span class="n">train_set_y</span> <span class="o">=</span> <span class="n">shared_dataset</span><span class="p">(</span><span class="n">train_set</span><span class="p">)</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">500</span>    <span class="c"># size of the minibatch</span>
+
+<span class="c"># accessing the third minibatch of the training set</span>
+
+<span class="n">data</span>  <span class="o">=</span> <span class="n">train_set_x</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="mi">500</span><span class="p">:</span><span class="mi">3</span><span class="o">*</span><span class="mi">500</span><span class="p">]</span>
+<span class="n">label</span> <span class="o">=</span> <span class="n">train_set_y</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="mi">500</span><span class="p">:</span><span class="mi">3</span><span class="o">*</span><span class="mi">500</span><span class="p">]</span>
+</pre></div>
+</div>
+</blockquote>
+<p>The data has to be stored as floats on the GPU ( the right
+<tt class="docutils literal"><span class="pre">dtype</span></tt> for storing on the GPU is given by <tt class="docutils literal"><span class="pre">theano.config.floatX</span></tt>).
+To get around this shortcomming for the labels, we store them as float,
+and then cast it to int.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are running your code on the GPU and the dataset you are using
+is too large to fit in memory the code will crash. In such a case you
+should store the data in a shared variable. You can however store a
+sufficiently small chunk of your data (several minibatches) in a shared
+variable and use that during training. Once you got through the chunk,
+update the values it stores. This way you minimize the number of data
+transfers between CPU memory and GPU memory.</p>
+</div>
+</div>
+</div>
+<div class="section" id="notation">
+<span id="index-3"></span><h2>Notation<a class="headerlink" href="#notation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="dataset-notation">
+<span id="index-4"></span><h3>Dataset notation<a class="headerlink" href="#dataset-notation" title="Permalink to this headline">¶</a></h3>
+<p>We label data sets as <img class="math" src="_images/math/36eee9eaded3a8c323d85046041a94a032ded392.png" alt="\mathcal{D}"/>. When the distinction is important, we
+indicate train, validation, and test sets as: <img class="math" src="_images/math/4ed176fa7b8f2f50b96d46c3d01e1ec241575ca6.png" alt="\mathcal{D}_{train}"/>,
+<img class="math" src="_images/math/a58509a19258f2b7aa2354d3fd6529f50321da52.png" alt="\mathcal{D}_{valid}"/> and <img class="math" src="_images/math/f6d0ab28f616a0a7aa1bfa2b005a07f5c8bcbfb6.png" alt="\mathcal{D}_{test}"/>. The validation set
+is used to perform model selection and hyper-parameter selection, whereas
+the test set is used to evaluate the final generalization error and
+compare different algorithms in an unbiased way.</p>
+<p>The tutorials mostly deal with classification problems, where each data set
+<img class="math" src="_images/math/36eee9eaded3a8c323d85046041a94a032ded392.png" alt="\mathcal{D}"/> is an indexed set of pairs <img class="math" src="_images/math/dd8ac449bcfbed8691b46ac75a241f1d4b2e5a40.png" alt="(x^{(i)},y^{(i)})"/>. We
+use superscripts to distinguish training set examples: <img class="math" src="_images/math/f20742b986bc476d570774c823d3f1de7b31d1f0.png" alt="x^{(i)} \in
+\mathcal{R}^D"/> is thus the i-th training example of dimensionality <img class="math" src="_images/math/9ffb448918db29f2a72f8f87f421b3b3cad18f95.png" alt="D"/>. Similarly,
+<img class="math" src="_images/math/861ccf187e0f8c031d5f43e218b71f7e8c6430ce.png" alt="y^{(i)} \in \{0, ..., L\}"/> is the i-th label assigned to input
+<img class="math" src="_images/math/ccb122c9db21d2f7e393bf3482a8a8339e8559e4.png" alt="x^{(i)}"/>. It is straightforward to extend these examples to
+ones where <img class="math" src="_images/math/05cd3501fa05972c2841eb937fa52ea68ebdd1ea.png" alt="y^{(i)}"/> has other types (e.g. Gaussian for regression,
+or groups of multinomials for predicting multiple symbols).</p>
+</div>
+<div class="section" id="math-conventions">
+<span id="index-5"></span><h3>Math Conventions<a class="headerlink" href="#math-conventions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><img class="math" src="_images/math/10cb764f88509fb1c8012366993fdbee98f31bc5.png" alt="W"/>: upper-case symbols refer to a matrix unless specified otherwise</li>
+<li><img class="math" src="_images/math/224b256fe8e7ad35c4ca177e23f579354bb6f260.png" alt="W_{ij}"/>: element at i-th row and j-th column of matrix <img class="math" src="_images/math/10cb764f88509fb1c8012366993fdbee98f31bc5.png" alt="W"/></li>
+<li><img class="math" src="_images/math/93bdd1a99dc7dd4697e45d515f50f9614ec1ccd2.png" alt="W_{i \cdot}, W_i"/>: vector, i-th row of matrix <img class="math" src="_images/math/10cb764f88509fb1c8012366993fdbee98f31bc5.png" alt="W"/></li>
+<li><img class="math" src="_images/math/9a592d673939e87b75e5335e76af0c822c7d4259.png" alt="W_{\cdot j}"/>: vector, j-th column of matrix <img class="math" src="_images/math/10cb764f88509fb1c8012366993fdbee98f31bc5.png" alt="W"/></li>
+<li><img class="math" src="_images/math/8136a7ef6a03334a7246df9097e5bcc31ba33fd2.png" alt="b"/>: lower-case symbols refer to a vector unless specified otherwise</li>
+<li><img class="math" src="_images/math/94d9565abaadf04609a2e9941aa2d20b0a299b8a.png" alt="b_i"/>: i-th element of vector <img class="math" src="_images/math/8136a7ef6a03334a7246df9097e5bcc31ba33fd2.png" alt="b"/></li>
+</ul>
+</div>
+<div class="section" id="list-of-symbols-and-acronyms">
+<span id="index-6"></span><h3>List of Symbols and acronyms<a class="headerlink" href="#list-of-symbols-and-acronyms" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><img class="math" src="_images/math/9ffb448918db29f2a72f8f87f421b3b3cad18f95.png" alt="D"/>: number of input dimensions.</li>
+<li><img class="math" src="_images/math/5fa630dae8db4bf9cfd80b587bd337458409d6f7.png" alt="D_h^{(i)}"/>: number of hidden units in the <img class="math" src="_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i"/>-th layer.</li>
+<li><img class="math" src="_images/math/fa8e7a1fd21bcacff63ee44e2e78af72214fe54e.png" alt="f_{\theta}(x)"/>, <img class="math" src="_images/math/c96dd6ec1dc4ad7520fbdc78fcdbec9edd068d0c.png" alt="f(x)"/>: classification function associated with a model <img class="math" src="_images/math/add5793183306da7b16409b5d3505018d88531b8.png" alt="P(Y|x,\theta)"/>, defined as <img class="math" src="_images/math/9109179093ef481255ce2f3f8d2ce1e81e58d8c4.png" alt="{\rm argmax}_k P(Y=k|x,\theta)"/>.
+Note that we will often drop the <img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/> subscript.</li>
+<li>L: number of labels.</li>
+<li><img class="math" src="_images/math/570041485c60e3ca67015b207993deb70725d1bb.png" alt="\mathcal{L}(\theta, \cal{D})"/>: log-likelihood <img class="math" src="_images/math/96d02faf3df447274e236cb6f2d22d6eeed8bac4.png" alt="\cal{D}"/>
+of the model defined by parameters <img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/>.</li>
+<li><img class="math" src="_images/math/d5892c7f58882251d76b81e7561c57c80b665b70.png" alt="\ell(\theta, \cal{D})"/> empirical loss of the prediction function f
+parameterized by <img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/> on data set <img class="math" src="_images/math/96d02faf3df447274e236cb6f2d22d6eeed8bac4.png" alt="\cal{D}"/>.</li>
+<li>NLL: negative log-likelihood</li>
+<li><img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/>: set of all parameters for a given model</li>
+</ul>
+</div>
+<div class="section" id="python-namespaces">
+<span id="index-7"></span><h3>Python Namespaces<a class="headerlink" href="#python-namespaces" title="Permalink to this headline">¶</a></h3>
+<p>Tutorial code often uses the following namespaces:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">theano</span>
+<span class="kn">import</span> <span class="nn">theano.tensor</span> <span class="kn">as</span> <span class="nn">T</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="a-primer-on-supervised-optimization-for-deep-learning">
+<h2>A Primer on Supervised Optimization for Deep Learning<a class="headerlink" href="#a-primer-on-supervised-optimization-for-deep-learning" title="Permalink to this headline">¶</a></h2>
+<p id="stoch-grad-label">What&#8217;s exciting about Deep Learning is largely the use of unsupervised learning
+of deep networks.  But supervised learning also plays an important role.  The
+utility of unsupervised <em>pre-training</em> is often evaluated on the basis of what
+performance can be achieved after supervised <em>fine-tuning</em>.  This chapter
+reviews the basics of supervised learning for classification models, and covers
+the minibatch stochastic gradient descent algorithm that is used to fine-tune
+many of the models in the Deep Learning Tutorials. Have a look at these
+<a class="reference external" href="http://www.iro.umontreal.ca/~pift6266/H10/notes/gradient.html">introductory course notes on gradient-based learning</a>
+for more basics on the notion of optimizing a training criterion using the gradient.</p>
+<div class="section" id="learning-a-classifier">
+<span id="opt-learn-classifier"></span><h3>Learning a Classifier<a class="headerlink" href="#learning-a-classifier" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="zero-one-loss">
+<span id="index-8"></span><h4>Zero-One Loss<a class="headerlink" href="#zero-one-loss" title="Permalink to this headline">¶</a></h4>
+<p>The models presented in these deep learning tutorials are mostly used
+for classification. The objective in training a classifier is to minimize the number
+of errors (zero-one loss) on unseen examples. If <img class="math" src="_images/math/de7bf92ea2c5f063d00c4dbca0f5d91c7ab988da.png" alt="f: R^D \rightarrow
+\{0,...,L\}"/> is the prediction function, then this loss can be written as:</p>
+<div class="math">
+<p><img src="_images/math/ec8b5b509993eaca2019844f27bfbb8c5bd60bf5.png" alt="\ell_{0,1} = \sum_{i=0}^{|\mathcal{D}|} I_{f(x^{(i)}) \neq y^{(i)}}" /></p>
+</div><p>where either <img class="math" src="_images/math/36eee9eaded3a8c323d85046041a94a032ded392.png" alt="\mathcal{D}"/> is the training
+set (during training)
+or <img class="math" src="_images/math/1a1f3c1d3141f0d96f1147c6c6cfdaae8787909f.png" alt="\mathcal{D} \cap \mathcal{D}_{train} = \emptyset"/>
+(to avoid biasing the evaluation of validation or test error). <img class="math" src="_images/math/027f4a11d6090f9eac0ce2488df6384dad1263ea.png" alt="I"/> is the
+indicator function defined as:</p>
+<div class="math">
+<p><img src="_images/math/dec195a9a34fc973305be999a966d74e01a76bef.png" alt="I_x = \left\{\begin{array}{ccc}
+      1&amp;\mbox{ if $x$ is True} \\
+      0&amp;\mbox{ otherwise}\end{array}\right." /></p>
+</div><p>In this tutorial, <img class="math" src="_images/math/bb2c93730dbb48558bb3c4738c956c4e8f816437.png" alt="f"/> is defined as:</p>
+<div class="math">
+<p><img src="_images/math/b68d62b38037cd2b95df9674d366df472c8236aa.png" alt="f(x) = {\rm argmax}_k P(Y=k | x, \theta)" /></p>
+</div><p>In python, using Theano this can be written as :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># zero_one_loss is a Theano variable representing a symbolic</span>
+<span class="c"># expression of the zero one loss ; to get the actual value this</span>
+<span class="c"># symbolic expression has to be compiled into a Theano function (see</span>
+<span class="c"># the Theano tutorial for more details)</span>
+<span class="n">zero_one_loss</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">neq</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">p_y_given_x</span><span class="p">),</span><span class="n">y</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="negative-log-likelihood-loss">
+<span id="index-9"></span><h4>Negative Log-Likelihood Loss<a class="headerlink" href="#negative-log-likelihood-loss" title="Permalink to this headline">¶</a></h4>
+<p>Since the zero-one loss is not differentiable, optimizing it for large models
+(thousands or millions of parameters) is prohibitively expensive
+(computationally). We thus maximize the log-likelihood of our classifier given
+all the labels in a training set.</p>
+<div class="math">
+<p><img src="_images/math/3b13c15532a8ff0ba031293290662d88a07070a6.png" alt="\mathcal{L}(\theta, \mathcal{D}) =
+    \sum_{i=0}^{|\mathcal{D}|} \log P(Y=y^{(i)} | x^{(i)}, \theta)" /></p>
+</div><p>The likelihood of the correct class is not the same as the
+number of right predictions, but from the point of view of a randomly
+initialized classifier they are pretty similar.
+Remember that likelihood and zero-one loss are different objectives;
+you should see that they are corralated on the validation set but
+sometimes one will rise while the other falls, or vice-versa.</p>
+<p>Since we usually speak in terms of minimizing a loss function, learning will
+thus attempt to <strong>minimize</strong> the <strong>negative</strong> log-likelihood (NLL), defined
+as:</p>
+<div class="math">
+<p><img src="_images/math/06bb48f8f4aedccebf735114a7bbcc0d34039f77.png" alt="NLL(\theta, \mathcal{D}) = - \sum_{i=0}^{|\mathcal{D}|} \log P(Y=y^{(i)} | x^{(i)}, \theta)" /></p>
+</div><p>The NLL of our classifier is a differentiable surrogate for the zero-one loss,
+and we use the gradient of this function over our training data as a
+supervised learning signal for deep learning of a classifier.</p>
+<p>This can be computed using the following line of code :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># NLL is a symbolic variable ; to get the actual value of NLL, this symbolic</span>
+<span class="c"># expression has to be compiled into a Theano function (see the Theano</span>
+<span class="c"># tutorial for more details)</span>
+<span class="n">NLL</span> <span class="o">=</span> <span class="o">-</span><span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p_y_given_x</span><span class="p">)[</span><span class="n">T</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">y</span><span class="p">])</span>
+<span class="c"># note on syntax: T.arange(y.shape[0]) is a vector of integers [0,1,2,...,len(y)].</span>
+<span class="c"># Indexing a matrix M by the two vectors [0,1,...,K], [a,b,...,k] returns the</span>
+<span class="c"># elements M[0,a], M[1,b], ..., M[K,k] as a vector.  Here, we use this</span>
+<span class="c"># syntax to retrieve the log-probability of the correct labels, y.</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="stochastic-gradient-descent">
+<span id="opt-sgd"></span><span id="index-10"></span><h3>Stochastic Gradient Descent<a class="headerlink" href="#stochastic-gradient-descent" title="Permalink to this headline">¶</a></h3>
+<p>What is ordinary gradient descent?  it is a simple
+algorithm in which we repeatedly make small steps downward on an error
+surface defined by a loss function of some parameters.
+For the purpose of ordinary gradient descent we consider that the training
+data is rolled into the loss function. Then the pseudocode of this
+algorithm can be described as :</p>
+<div class="highlight-python"><pre># GRADIENT DESCENT
+
+while True:
+    loss = f(params)
+    d_loss_wrt_params = ... # compute gradient
+    params -= learning_rate * d_loss_wrt_params
+    if &lt;stopping condition is met&gt;:
+        return params</pre>
+</div>
+<p>Stochastic gradient descent (SGD) works according to the same principles as
+ordinary gradient descent, but proceeds more quickly by estimating the gradient from just
+a few examples at a time instead of the entire training set.  In its purest
+form, we estimate the gradient from just a single example at a time.</p>
+<div class="highlight-python"><pre># STOCHASTIC GRADIENT DESCENT
+for (x_i,y_i) in training_set:
+                            # imagine an infinite generator
+                            # that may repeat examples (if there is only a finite training set)
+    loss = f(params, x_i, y_i)
+    d_loss_wrt_params = ... # compute gradient
+    params -= learning_rate * d_loss_wrt_params
+    if &lt;stopping condition is met&gt;:
+        return params</pre>
+</div>
+<p>The variant that we recommend for deep learning is a further twist on
+stochastic gradient descent using so-called &#8220;minibatches&#8221;.
+Minibatch SGD works identically to SGD, except that we use more than
+one training example to make each estimate of the gradient.  This technique reduces
+variance in the estimate of the gradient, and often makes better use of the
+hierarchical memory organization in modern computers.</p>
+<div class="highlight-python"><pre>for (x_batch,y_batch) in train_batches:
+                            # imagine an infinite generator
+                            # that may repeat examples
+    loss = f(params, x_batch, y_batch)
+    d_loss_wrt_params = ... # compute gradient using theano
+    params -= learning_rate * d_loss_wrt_params
+    if &lt;stopping condition is met&gt;:
+        return params</pre>
+</div>
+<p>There is a tradeoff in the choice of the minibatch size <img class="math" src="_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B"/>.  The
+reduction of variance and use of SIMD instructions helps most when increasing
+<img class="math" src="_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B"/> from 1 to 2, but the marginal improvement fades rapidly to nothing.
+With large <img class="math" src="_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B"/>, time is wasted in reducing the variance of the gradient
+estimator, that time would be better spent on additional gradient steps.
+An optimal <img class="math" src="_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B"/> is model-, dataset-, and hardware-dependent, and can be
+anywhere from 1 to maybe several hundreds.  In the tutorial we set it to 20,
+but this choice is almost arbitrary (though harmless).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are training for a fixed number of epochs, the minibatch size becomes important
+because it controls the number of updates done to your parameters. Training the same model
+for 10 epochs using a batch size of 1 yields completely different results compared
+to training for the same 10 epochs but with a batchsize of 20. Keep this in mind when
+switching between batch sizes and be prepared to tweak all the other parameters acording
+to the batch size used.</p>
+</div>
+<p>All code-blocks above show pseudocode of how the algorithm looks like. Implementing such
+algorithm in Theano can be done as follows :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Minibatch Stochastic Gradient Descent</span>
+
+<span class="c"># assume loss is a symbolic description of the loss function given</span>
+<span class="c"># the symbolic variables params (shared variable), x_batch, y_batch;</span>
+
+<span class="c"># compute gradient of loss with respect to params</span>
+<span class="n">d_loss_wrt_params</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+
+<span class="c"># compile the MSGD step into a theano function</span>
+<span class="n">updates</span> <span class="o">=</span> <span class="p">{</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">d_loss_wrt_params</span><span class="p">}</span>
+<span class="n">MSGD</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([</span><span class="n">x_batch</span><span class="p">,</span><span class="n">y_batch</span><span class="p">],</span> <span class="n">loss</span><span class="p">,</span> <span class="n">updates</span> <span class="o">=</span> <span class="n">updates</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">)</span> <span class="ow">in</span> <span class="n">train_batches</span><span class="p">:</span>
+    <span class="c"># here x_batch and y_batch are elements of train_batches and</span>
+    <span class="c"># therefore numpy arrays; function MSGD also updates the params</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;Current loss is &#39;</span><span class="p">,</span> <span class="n">MSGD</span><span class="p">(</span><span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">stopping_condition_is_met</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">params</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="regularization">
+<span id="index-11"></span><h3>Regularization<a class="headerlink" href="#regularization" title="Permalink to this headline">¶</a></h3>
+<p>There is more to machine learning than optimization.  When we
+train our model from data we are trying to prepare it to do well on <em>new</em>
+examples, not the ones it has already seen.  The training loop above for MSGD
+does not take this into account, and may overfit the training examples.
+A way to combat overfitting is through regularization.
+There are several techniques for regularization; the ones we will explain
+here are L1/L2 regularization and early-stopping.</p>
+<div class="section" id="l1-and-l2-regularization">
+<span id="l1-l2-regularization"></span><span id="index-12"></span><h4>L1 and L2 regularization<a class="headerlink" href="#l1-and-l2-regularization" title="Permalink to this headline">¶</a></h4>
+<p>L1 and L2 regularization involve adding an extra term to the loss function,
+which penalizes certain parameter configurations. Formally, if our loss function is:</p>
+<div class="math">
+<p><img src="_images/math/06bb48f8f4aedccebf735114a7bbcc0d34039f77.png" alt="NLL(\theta, \mathcal{D}) = - \sum_{i=0}^{|\mathcal{D}|} \log P(Y=y^{(i)} | x^{(i)}, \theta)" /></p>
+</div><p>then the regularized loss will be:</p>
+<div class="math">
+<p><img src="_images/math/fce8351623b211dfbe817a1474c9b2f798045698.png" alt="E(\theta, \mathcal{D}) =  NLL(\theta, \mathcal{D}) + \lambda R(\theta)\\" /></p>
+</div><p>or, in our case</p>
+<div class="math">
+<p><img src="_images/math/d298afb310754d8f4949b2cd83ff5bd2297c122b.png" alt="E(\theta, \mathcal{D}) =  NLL(\theta, \mathcal{D}) + \lambda||\theta||_p^p" /></p>
+</div><p>where</p>
+<div class="math">
+<p><img src="_images/math/959833a91dd4b88e15c23428f543311bc4b7f74e.png" alt="||\theta||_p = \left(\sum_{j=0}^{|\theta|}{|\theta_j|^p}\right)^{\frac{1}{p}}" /></p>
+</div><p>which is the <img class="math" src="_images/math/d855c6a7ae519f92171373ddc597246ab1abfe77.png" alt="L_p"/> norm of <img class="math" src="_images/math/52e8ed7a3ba22130ad3984eb2cd413406475a689.png" alt="\theta"/>. <img class="math" src="_images/math/ce4588fd900d02afcbd260bc07f54cce49a7dc4a.png" alt="\lambda"/> is a hyper-parameter which
+controls the relative importance of the regularization parameter. Commonly used values for p
+are 1 and 2, hence the L1/L2 nomenclature. If p=2, then the regularizer is
+also called &#8220;weight decay&#8221;.</p>
+<p>In principle, adding a regularization term to the loss will encourage smooth
+network mappings in a neural network (by penalizing large values of the
+parameters, which decreases the amount of nonlinearity that the
+network models). More intuitively, the two terms (NLL and <img class="math" src="_images/math/5f74b7b36cc295349c0c4e19b1dc7993d3419d45.png" alt="R(\theta)"/>)
+correspond to modelling the data well (NLL) and having &#8220;simple&#8221; or &#8220;smooth&#8221;
+solutions (<img class="math" src="_images/math/5f74b7b36cc295349c0c4e19b1dc7993d3419d45.png" alt="R(\theta)"/>). Thus, minimizing the sum of both will, in
+theory, correspond to finding the right trade-off between the fit to the
+training data and the &#8220;generality&#8221; of the solution that is found. To follow
+Occam&#8217;s razor principle, this minimization should find us the simplest
+solution (as measured by our simplicity criterion) that fits the training
+data.</p>
+<p>Note that the fact that a solution is &#8220;simple&#8221; does not mean that it will
+generalize well. Empirically, it was found that performing such regularization
+in the context of neural networks helps with generalization, especially
+on small datasets.
+The code block below shows how to compute the loss in python when it
+contains both a L1 regularization term weighted by <img class="math" src="_images/math/72519e3a9009a9367ff40876072dda5c24c4dfdf.png" alt="\lambda_1"/> and
+L2 regularization term weighted by <img class="math" src="_images/math/ee145dd82bf7803729dba9ca823eae73a80d6698.png" alt="\lambda_2"/></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># symbolic Theano variable that represents the L1 regularization term</span>
+<span class="n">L1</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+
+<span class="c"># symbolic Theano variable that represents the squared L2 term</span>
+<span class="n">L2_sqr</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">param</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># the loss</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">NLL</span> <span class="o">+</span> <span class="n">lambda_1</span> <span class="o">*</span> <span class="n">L1</span> <span class="o">+</span> <span class="n">lambda_2</span> <span class="o">*</span> <span class="n">L2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="early-stopping">
+<span id="opt-early-stopping"></span><span id="index-13"></span><h4>Early-Stopping<a class="headerlink" href="#early-stopping" title="Permalink to this headline">¶</a></h4>
+<p>Early-stopping combats overfitting by monitoring the model&#8217;s performance on a
+<em>validation set</em>.  A validation set is a set of examples that we never use for
+gradient descent, but which is also not a part of the <em>test set</em>.  The
+validation examples are considered to be representative of future test examples.
+We can use them during training because they are not part of the test set.
+If the model&#8217;s performance ceases to improve sufficiently on the
+validation set, or even degrades with further optimization, then the
+heuristic implemented here gives up on much further optimization.</p>
+<p>The choice of when to stop is a
+judgement call and a few heuristics exist, but these tutorials will make use
+of a strategy based on a geometrically increasing amount of patience.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># early-stopping parameters</span>
+<span class="n">patience</span>              <span class="o">=</span> <span class="mi">5000</span>  <span class="c"># look as this many examples regardless</span>
+<span class="n">patience_increase</span>     <span class="o">=</span> <span class="mi">2</span>     <span class="c"># wait this much longer when a new best is</span>
+                              <span class="c"># found</span>
+<span class="n">improvement_threshold</span> <span class="o">=</span> <span class="mf">0.995</span> <span class="c"># a relative improvement of this much is</span>
+                              <span class="c"># considered significant</span>
+<span class="n">validation_frequency</span>  <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">,</span> <span class="n">patience</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+                              <span class="c"># go through this many</span>
+                              <span class="c"># minibatches before checking the network</span>
+                              <span class="c"># on the validation set; in this case we</span>
+                              <span class="c"># check every epoch</span>
+
+<span class="n">best_params</span>          <span class="o">=</span> <span class="bp">None</span>
+<span class="n">best_validation_loss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span>
+<span class="n">test_score</span>           <span class="o">=</span> <span class="mf">0.</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+
+<span class="n">done_looping</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">epoch</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">epoch</span> <span class="o">&lt;</span> <span class="n">n_epochs</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">done_looping</span><span class="p">):</span>
+    <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">minibatch_index</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n_train_batches</span><span class="p">):</span>
+
+        <span class="n">d_loss_wrt_params</span> <span class="o">=</span> <span class="o">...</span> <span class="c"># compute gradient</span>
+        <span class="n">params</span> <span class="o">-=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">d_loss_wrt_params</span> <span class="c"># gradient descent</span>
+
+        <span class="c"># iteration number</span>
+        <span class="nb">iter</span> <span class="o">=</span> <span class="n">epoch</span> <span class="o">*</span> <span class="n">n_train_batches</span> <span class="o">+</span> <span class="n">minibatch_index</span>
+        <span class="c"># note that if we do `iter % validation_frequency` it will be</span>
+        <span class="c"># true for iter = 0 which we do not want</span>
+        <span class="k">if</span> <span class="nb">iter</span> <span class="ow">and</span> <span class="nb">iter</span> <span class="o">%</span> <span class="n">validation_frequency</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="n">this_validation_loss</span> <span class="o">=</span> <span class="o">...</span> <span class="c"># compute zero-one loss on validation set</span>
+
+            <span class="k">if</span> <span class="n">this_validation_loss</span> <span class="o">&lt;</span> <span class="n">best_validation_loss</span><span class="p">:</span>
+
+                <span class="c"># improve patience if loss improvement is good enough</span>
+                <span class="k">if</span> <span class="n">this_validation_loss</span> <span class="o">&lt;</span> <span class="n">best_validation_loss</span><span class="o">*</span><span class="n">improvement_threshold</span><span class="p">:</span>
+
+                    <span class="n">patience</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">patience</span><span class="p">,</span> <span class="nb">iter</span> <span class="o">*</span> <span class="n">patience_increase</span><span class="p">)</span>
+                <span class="n">best_params</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+                <span class="n">best_validation_loss</span> <span class="o">=</span> <span class="n">this_validation_loss</span>
+
+        <span class="k">if</span> <span class="n">patience</span> <span class="o">&lt;=</span> <span class="nb">iter</span><span class="p">:</span>
+            <span class="n">done_looping</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">break</span>
+
+<span class="c"># POSTCONDITION:</span>
+<span class="c"># best_params refers to the best out-of-sample parameters observed during the optimization</span>
+</pre></div>
+</div>
+<p>If we run out of batches of training data before running out of patience, then
+we just go back to the beginning of the training set and repeat.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <tt class="docutils literal"><span class="pre">validation_frequency</span></tt> should always be smaller than the
+<tt class="docutils literal"><span class="pre">patience</span></tt>. The code should check at least two times how it
+performs before running out of patience. This is the reason we used
+the formulation <tt class="docutils literal"><span class="pre">validation_frequency</span> <span class="pre">=</span> <span class="pre">min(</span> <span class="pre">value,</span> <span class="pre">patience/2.)</span></tt></p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm could possibly be improved by using a test of statistical significance
+rather than the simple comparison, when deciding whether to increase the
+patience.</p>
+</div>
+</div>
+</div>
+<div class="section" id="testing">
+<span id="index-14"></span><h3>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h3>
+<p>After the loop exits, the best_params variable refers to the best-performing
+model on the validation set.  If we repeat this procedure for another model
+class, or even another random initialization, we should use the same
+train/valid/test split of the data, and get other best-performing
+models.  If we have to choose what the best model class or the best
+initialization was, we compare the best_validation_loss for each model.  When
+we have finally chosen the model we think is the best (on validation data), we
+report that model&#8217;s test set performance.  That is the performance we expect on
+unseen examples.</p>
+</div>
+<div class="section" id="recap">
+<h3>Recap<a class="headerlink" href="#recap" title="Permalink to this headline">¶</a></h3>
+<p>That&#8217;s it for the optimization section.
+The technique of early-stopping requires us to partition the set of examples into three sets
+(training <img class="math" src="_images/math/4ed176fa7b8f2f50b96d46c3d01e1ec241575ca6.png" alt="\mathcal{D}_{train}"/>,
+validation <img class="math" src="_images/math/a58509a19258f2b7aa2354d3fd6529f50321da52.png" alt="\mathcal{D}_{valid}"/>,
+test <img class="math" src="_images/math/f6d0ab28f616a0a7aa1bfa2b005a07f5c8bcbfb6.png" alt="\mathcal{D}_{test}"/>).
+The training set is used for minibatch stochastic gradient descent on the
+differentiable approximation of the objective function.
+As we perform this gradient descent, we periodically consult the validation set
+to see how our model is doing on the real objective function (or at least our
+empirical estimate of it).
+When we see a good model on the validation set, we save it.
+When it has been a long time since seeing a good model, we abandon our search
+and return the best parameters found, for evaluation on the test set.</p>
+</div>
+</div>
+<div class="section" id="theano-python-tips">
+<h2>Theano/Python Tips<a class="headerlink" href="#theano-python-tips" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="loading-and-saving-models">
+<h3>Loading and Saving Models<a class="headerlink" href="#loading-and-saving-models" title="Permalink to this headline">¶</a></h3>
+<p>When you&#8217;re doing experiments, it can take hours (sometimes days!) for
+gradient-descent to find the best parameters.  You will want to save those
+weights once you find them.  You may also want to save your current-best
+estimates as the search progresses.</p>
+<p><strong>Pickle the numpy ndarrays from your shared variables</strong></p>
+<p>The best way to save/archive your model&#8217;s parameters is to use pickle or
+deepcopy the ndarray objects.  So for example, if your parameters are in
+shared variables <tt class="docutils literal"><span class="pre">w,</span> <span class="pre">v,</span> <span class="pre">u</span></tt>, then your save command should look something
+like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">cPickle</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">save_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;path&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>  <span class="c"># this will overwrite current contents</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cPickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="n">save_file</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c"># the -1 is for HIGHEST_PROTOCOL</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cPickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="n">save_file</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c"># .. and it triggers much more efficient</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cPickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="n">save_file</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c"># .. storage than numpy&#39;s default</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">save_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Then later, you can load your data back like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">save_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">save_file</span><span class="p">),</span> <span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">v</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">save_file</span><span class="p">),</span> <span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">cPickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">save_file</span><span class="p">),</span> <span class="n">borrow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This technique is a bit verbose, but it is tried and true.  You will be able
+to load your data and render it in matplotlib without trouble, years after
+saving it.</p>
+<p><strong>Do not pickle your training or test functions for long-term storage</strong></p>
+<p>Theano functions are compatible with Python&#8217;s deepcopy and pickle mechanisms,
+but you should not necessarily pickle a Theano function.  If you update your
+Theano folder and one of the internal changes, then you may not be able to
+un-pickle your model.  Theano is still in active development, and the internal
+APIs are subject to change.  So to be on the safe side &#8211; do not pickle your
+entire training or testing functions for long-term storage.  The pickle
+mechanism is aimed at for short-term storage, such as a temp file, or a copy to
+another machine in a distributed job.</p>
+<p>Read more about <a class="reference external" href="http://deeplearning.net/software/theano/tutorial/loading_and_saving.html">serialization in Theano</a>, or Python&#8217;s <a class="reference external" href="http://docs.python.org/library/pickle.html">pickling</a>.</p>
+</div>
+<div class="section" id="plotting-intermediate-results">
+<h3>Plotting Intermediate Results<a class="headerlink" href="#plotting-intermediate-results" title="Permalink to this headline">¶</a></h3>
+<p>Visualizations can be very powerful tools for understanding what your model or
+training algorithm is doing.  You might be tempted to insert <tt class="docutils literal"><span class="pre">matplotlib</span></tt>
+plotting commands, or <tt class="docutils literal"><span class="pre">PIL</span></tt> image-rendering commands into your model-training
+script.  However, later you will observe something interesting in one of those
+pre-rendered images and want to investigate something that isn&#8217;t clear from
+the pictures.  You&#8217;ll wished you had saved the original model.</p>
+<p><strong>If you have enough disk space, your training script should save intermediate models and  a visualization
+script should process those saved models.</strong></p>
+<p>You already have a model-saving function right?  Just use it again to save
+these intermediate models.</p>
+<p>Libraries you&#8217;ll want to know about: Python Image Library (<a class="reference external" href="http://www.pythonware.com/products/pil">PIL</a>), <a class="reference external" href="http://matplotlib.sourceforge.net">matplotlib</a>.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="logreg.html" title="Classifying MNIST digits using Logistic Regression"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Deep Learning Tutorials"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>

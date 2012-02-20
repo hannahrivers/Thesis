@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Deep Learning Tutorials &mdash; DeepLearning v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DeepLearning v0.1 documentation" href="index.html" />
+    <link rel="next" title="Getting Started" href="gettingstarted.html" />
+    <link rel="prev" title="LICENSE" href="LICENSE.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-168290-9']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="gettingstarted.html" title="Getting Started"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="LICENSE.html" title="LICENSE"
+             accesskey="P">previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="LICENSE.html"
+                                  title="previous chapter">LICENSE</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="gettingstarted.html"
+                                  title="next chapter">Getting Started</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/intro.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="deep-learning-tutorials">
+<h1>Deep Learning Tutorials<a class="headerlink" href="#deep-learning-tutorials" title="Permalink to this headline">¶</a></h1>
+<p>Deep Learning is a new area of Machine Learning research, which
+has been introduced with the objective of moving Machine Learning
+closer to one of its original goals: Artificial Intelligence.
+See these course notes for a <a class="reference external" href="http://www.iro.umontreal.ca/~pift6266/H10/notes/mlintro.html">brief introduction to Machine Learning for AI</a>
+and an <a class="reference external" href="http://www.iro.umontreal.ca/~pift6266/H10/notes/deepintro.html">introduction to Deep Learning algorithms</a>.</p>
+<p>Deep Learning is about learning multiple levels of representation
+and abstraction that help to
+make sense of data such as images, sound, and text.
+For more about deep learning algorithms, see for example:</p>
+<blockquote>
+<ul class="simple">
+<li>The monograph or review paper <a class="reference external" href="http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239">Learning Deep Architectures for AI</a> (Foundations &amp; Trends in Machine Learning, 2009).</li>
+<li>The ICML 2009 Workshop on Learning Feature Hierarchies <a class="reference external" href="http://www.cs.toronto.edu/~rsalakhu/deeplearning/index.html">webpage</a> has a <a class="reference external" href="http://www.cs.toronto.edu/~rsalakhu/deeplearning/references.html">list of references</a>.</li>
+<li>The LISA <a class="reference external" href="http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/WebHome">public wiki</a> has a <a class="reference external" href="http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/ReadingOnDeepNetworks">reading list</a> and a <a class="reference external" href="http://www.iro.umontreal.ca/~lisa/twiki/bin/view.cgi/Public/DeepNetworksBibliography">bibliography</a>.</li>
+<li>Geoff Hinton has <a class="reference external" href="http://www.cs.toronto.edu/~hinton/deeprefs.html">readings</a> from last year&#8217;s <a class="reference external" href="http://videolectures.net/jul09_hinton_deeplearn/">NIPS tutorial</a>.</li>
+</ul>
+</blockquote>
+<p>The tutorials presented here will introduce you to some of the most important deep learning
+algorithms and will also show you how to run them using <a class="reference external" href="http://deeplearning.net/software/theano">Theano</a>. Theano is a python library that makes writing deep learning models easy, and gives the option of
+training them on a GPU.</p>
+<p>The algorithm tutorials have some prerequisites.  You should know some python,
+and be familiar with numpy. Since this tutorial is about using Theano, you
+should read over the <a class="reference external" href="http://deeplearning.net/software/theano/tutorial">Theano basic tutorial</a> first.  Once you&#8217;ve done that,
+read through our <a class="reference external" href="gettingstarted.html#gettingstarted"><em>Getting Started</em></a> chapter &#8211; it introduces the notation, and [downloadable] datasets used in the algorithm tutorials, and the way we do optimization by stochastic gradient descent.</p>
+<p>The purely supervised learning algorithms are meant to be read in order:</p>
+<blockquote>
+<ol class="arabic simple">
+<li><a class="reference external" href="logreg.html#logreg"><em>Logistic Regression</em></a> - using Theano for something simple</li>
+<li><a class="reference external" href="mlp.html#mlp"><em>Multilayer perceptron</em></a> - introduction to layers</li>
+<li><a class="reference external" href="lenet.html#lenet"><em>Deep Convolutional Network</em></a> - a simplified version of LeNet5</li>
+</ol>
+</blockquote>
+<p>The unsupervised and semi-supervised learning algorithms are here (the auto-encoders can be read independently of the RBM/DBN thread):</p>
+<blockquote>
+<ul class="simple">
+<li><a class="reference external" href="dA.html#daa"><em>Auto Encoders, Denoising Autoencoders</em></a> - description of autoencoders</li>
+<li><a class="reference external" href="SdA.html#sda"><em>Stacked Denoising Auto-Encoders</em></a> - easy steps into unsupervised pre-training for deep nets</li>
+<li><a class="reference external" href="rbm.html#rbm"><em>Restricted Boltzmann Machines</em></a> - single layer generative RBM model</li>
+<li><a class="reference external" href="DBN.html#dbn"><em>Deep Belief Networks</em></a> - unsupervised generative pre-training of stacked RBMs followed by supervised fine-tuning</li>
+</ul>
+</blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="gettingstarted.html" title="Getting Started"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="LICENSE.html" title="LICENSE"
+             >previous</a> |</li>
+        <li><a href="contents.html">DeepLearning v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+      &copy; Copyright 2008--2010, LISA lab.
+      Last updated on Oct 05, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+    </div>
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+
+  </body>
+</html>
